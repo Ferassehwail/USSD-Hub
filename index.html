@@ -8,8 +8,19 @@
     
     <!-- إعدادات تطبيق الويب (PWA) -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#1e293b">
+    <meta name="theme-color" content="#1e293b" id="themeColorMeta">
     <link rel="apple-touch-icon" href="icon-192.png">
+
+    <script>
+        (function () {
+            try {
+                const savedTheme = localStorage.getItem('ussd_theme_preference');
+                if (savedTheme === 'light' || savedTheme === 'dark') {
+                    document.documentElement.setAttribute('data-theme', savedTheme);
+                }
+            } catch (error) {}
+        })();
+    </script>
 
     <style>
         @font-face {
@@ -20,7 +31,8 @@
             font-display: swap;
         }
 
-        :root {
+        :root,
+        html[data-theme="light"] {
             --jawwal-green: #8cc63f; 
             --palpay-purple: #6a359c; 
             --bop-magenta: #b51b72; 
@@ -33,7 +45,7 @@
         }
 
         @media (prefers-color-scheme: dark) {
-            :root {
+            :root:not([data-theme]) {
                 --bg-color: #0f172a;
                 --card-bg: #1e293b;
                 --text-main: #f1f5f9;
@@ -42,15 +54,25 @@
             }
         }
 
+        html[data-theme="dark"] {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f1f5f9;
+            --text-sub: #94a3b8;
+            --border-color: #334155;
+        }
+
         html {
             -webkit-font-smoothing: antialiased;
             text-rendering: optimizeLegibility;
+            -webkit-tap-highlight-color: transparent;
         }
 
         *,
         *::before,
         *::after {
             font-family: 'TajawalLocal', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+            -webkit-tap-highlight-color: transparent;
         }
 
         button,
@@ -59,6 +81,44 @@
         select,
         option {
             font-family: 'TajawalLocal', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        }
+
+        button,
+        [role="button"],
+        .history-item {
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        button:focus {
+            outline: none;
+        }
+
+        button:focus-visible,
+        input:focus-visible,
+        textarea:focus-visible {
+            outline: 2px solid rgba(59, 130, 246, 0.70);
+            outline-offset: 2px;
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            button:hover,
+            .wallet-btn:hover,
+            .theme-toggle-btn:hover {
+                transform: none;
+            }
+
+            button:active,
+            .history-item:active {
+                filter: brightness(0.97);
+                transform: scale(0.99);
+            }
+
+            .transfer-modal-backdrop button:active {
+                filter: none;
+                transform: none;
+            }
         }
 
         body {
@@ -90,6 +150,37 @@
             box-shadow: 0 8px 22px rgba(15, 118, 110, 0.25);
             position: relative;
             overflow: hidden;
+        }
+
+        .theme-toggle-btn {
+            position: absolute;
+            left: 10px;
+            top: 10px;
+            width: 36px;
+            height: 36px;
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.18);
+            color: #ffffff;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.16);
+            backdrop-filter: blur(6px);
+            transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+            z-index: 2;
+        }
+
+        .theme-toggle-btn:hover {
+            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.26);
+            border-color: rgba(255, 255, 255, 0.70);
+        }
+
+        .theme-toggle-icon {
+            font-size: 1.15rem;
+            line-height: 1;
         }
 
         .header-frame::before {
@@ -336,6 +427,15 @@
             font-weight: 400 !important;
         }
 
+        html[data-theme="dark"] input::placeholder,
+        html[data-theme="dark"] textarea::placeholder,
+        html[data-theme="dark"] input::-webkit-input-placeholder,
+        html[data-theme="dark"] textarea::-webkit-input-placeholder,
+        html[data-theme="dark"] input::-moz-placeholder,
+        html[data-theme="dark"] textarea::-moz-placeholder {
+            color: rgba(148, 163, 184, 0.34) !important;
+        }
+
         @media (prefers-color-scheme: dark) {
             input::placeholder,
             textarea::placeholder,
@@ -344,6 +444,15 @@
             input::-moz-placeholder,
             textarea::-moz-placeholder {
                 color: rgba(148, 163, 184, 0.34) !important;
+            }
+
+            html[data-theme="light"] input::placeholder,
+            html[data-theme="light"] textarea::placeholder,
+            html[data-theme="light"] input::-webkit-input-placeholder,
+            html[data-theme="light"] textarea::-webkit-input-placeholder,
+            html[data-theme="light"] input::-moz-placeholder,
+            html[data-theme="light"] textarea::-moz-placeholder {
+                color: rgba(100, 116, 139, 0.30) !important;
             }
         }
 
@@ -1007,6 +1116,39 @@
             text-align: center;
         }
 
+        .delete-history-summary {
+            display: grid;
+            gap: 7px;
+            margin: 0 0 12px 0;
+            padding: 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            background: rgba(248, 250, 252, 0.92);
+        }
+
+        .delete-history-summary-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            color: var(--text-main);
+            font-size: 0.8rem;
+            font-weight: 900;
+        }
+
+        .delete-history-summary-label {
+            color: var(--text-sub);
+            font-size: 0.74rem;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .delete-history-summary-value {
+            direction: ltr;
+            text-align: left;
+            overflow-wrap: anywhere;
+        }
+
         .delete-history-actions {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -1169,6 +1311,293 @@
             animation-duration: 1.2s;
         }
 
+        html[data-theme="dark"] {
+            color-scheme: dark;
+        }
+
+        html[data-theme="dark"] .card,
+        html[data-theme="dark"] .transfer-modal,
+        html[data-theme="dark"] .history-item,
+        html[data-theme="dark"] .history-summary-box,
+        html[data-theme="dark"] .history-filter-status,
+        html[data-theme="dark"] .history-empty-message {
+            background: #162033;
+            border-color: rgba(148, 163, 184, 0.24);
+            box-shadow: 0 12px 30px rgba(2, 6, 23, 0.30);
+        }
+
+        html[data-theme="dark"] input,
+        html[data-theme="dark"] textarea,
+        html[data-theme="dark"] .history-report-range-input {
+            background: #0b1220;
+            color: #f8fafc;
+            border-color: rgba(148, 163, 184, 0.34);
+        }
+
+        html[data-theme="dark"] .wallet-btn,
+        html[data-theme="dark"] .history-report-wallet-btn {
+            background: #111827;
+            color: #f8fafc;
+            border-color: rgba(148, 163, 184, 0.34);
+        }
+
+        html[data-theme="dark"] .wallet-btn.active.jawwal {
+            background: rgba(140, 198, 63, 0.18);
+            color: #f8fafc;
+        }
+
+        html[data-theme="dark"] .wallet-btn.active.palpay {
+            background: rgba(167, 139, 250, 0.18);
+            color: #f8fafc;
+        }
+
+        html[data-theme="dark"] .wallet-btn.bop:hover,
+        html[data-theme="dark"] .wallet-btn.active.bop {
+            background: rgba(244, 114, 182, 0.18);
+            color: #f8fafc;
+        }
+
+        html[data-theme="dark"] .history-report-panel,
+        html[data-theme="dark"] .history-report-modal {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98));
+            color: #f8fafc;
+            border-color: rgba(251, 191, 36, 0.42);
+            box-shadow: 0 24px 70px rgba(2, 6, 23, 0.62);
+        }
+
+        html[data-theme="dark"] .history-report-modal .history-report-title,
+        html[data-theme="dark"] .history-report-title {
+            color: #f8fafc;
+        }
+
+        html[data-theme="dark"] .history-report-modal .history-report-wallet-label,
+        html[data-theme="dark"] .history-report-modal .history-report-date-field label,
+        html[data-theme="dark"] .history-report-wallet-label,
+        html[data-theme="dark"] .history-report-date-field label {
+            color: #cbd5e1;
+        }
+
+        html[data-theme="dark"] .history-report-wallet-btn.active,
+        html[data-theme="dark"] .history-report-modal #historyReportWalletAll.active {
+            border-color: #38bdf8;
+            background: rgba(14, 165, 233, 0.20);
+            color: #e0f2fe;
+            box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.28);
+        }
+
+        html[data-theme="dark"] .history-report-modal #historyReportWalletJawwal.active {
+            border-color: var(--jawwal-green);
+            background: rgba(140, 198, 63, 0.20);
+            color: #ecfccb;
+            box-shadow: inset 0 0 0 1px rgba(140, 198, 63, 0.30);
+        }
+
+        html[data-theme="dark"] .history-report-modal #historyReportWalletPalpay.active {
+            border-color: #a78bfa;
+            background: rgba(167, 139, 250, 0.20);
+            color: #ede9fe;
+            box-shadow: inset 0 0 0 1px rgba(167, 139, 250, 0.30);
+        }
+
+        html[data-theme="dark"] .history-filter-btn,
+        html[data-theme="dark"] .history-report-btn,
+        html[data-theme="dark"] .history-summary-day-btn,
+        html[data-theme="dark"] .history-summary-month-btn,
+        html[data-theme="dark"] .history-clear-filter-btn,
+        html[data-theme="dark"] .history-clear-all-btn,
+        html[data-theme="dark"] .history-report-close-btn,
+        html[data-theme="dark"] .transfer-secondary-btn,
+        html[data-theme="dark"] .transfer-close-btn,
+        html[data-theme="dark"] .transfer-paste-btn,
+        html[data-theme="dark"] .transfer-file-btn {
+            border: 1px solid rgba(148, 163, 184, 0.22);
+        }
+
+        html[data-theme="dark"] .history-filter-btn {
+            background: rgba(59, 130, 246, 0.18);
+            color: #bfdbfe;
+        }
+
+        html[data-theme="dark"] .history-report-btn,
+        html[data-theme="dark"] .history-summary-day-btn {
+            background: rgba(245, 158, 11, 0.18);
+            color: #fde68a;
+        }
+
+        html[data-theme="dark"] .history-summary-month-btn {
+            background: rgba(139, 92, 246, 0.20);
+            color: #ddd6fe;
+        }
+
+        html[data-theme="dark"] .history-transfer-btn,
+        html[data-theme="dark"] .history-clear-filter-btn {
+            background: rgba(20, 184, 166, 0.18);
+            color: #99f6e4;
+        }
+
+        html[data-theme="dark"] .history-clear-all-btn,
+        html[data-theme="dark"] .history-report-close-btn,
+        html[data-theme="dark"] .transfer-close-btn {
+            background: rgba(248, 113, 113, 0.18);
+            color: #fecaca;
+        }
+
+        html[data-theme="dark"] .transfer-secondary-btn {
+            background: rgba(148, 163, 184, 0.14);
+            color: #e2e8f0;
+        }
+
+        html[data-theme="dark"] .wallet-required-message {
+            background: linear-gradient(135deg, rgba(8, 47, 73, 0.96), rgba(19, 78, 74, 0.96));
+            color: #e0f2fe;
+            border-color: rgba(56, 189, 248, 0.30);
+        }
+
+        html[data-theme="dark"] .delete-history-warning {
+            background: linear-gradient(135deg, rgba(127, 29, 29, 0.42), rgba(124, 45, 18, 0.34));
+            color: #fecaca;
+            border-color: rgba(248, 113, 113, 0.30);
+        }
+
+        html[data-theme="dark"] .delete-history-summary,
+        html[data-theme="dark"] .update-notes-box {
+            background: rgba(15, 23, 42, 0.78);
+            border-color: rgba(148, 163, 184, 0.24);
+        }
+
+        html[data-theme="dark"] .info-box {
+            background: rgba(59, 130, 246, 0.12);
+            color: #dbeafe;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme]) {
+                color-scheme: dark;
+            }
+
+            :root:not([data-theme]) .card,
+            :root:not([data-theme]) .transfer-modal,
+            :root:not([data-theme]) .history-item,
+            :root:not([data-theme]) .history-summary-box,
+            :root:not([data-theme]) .history-filter-status,
+            :root:not([data-theme]) .history-empty-message {
+                background: #162033;
+                border-color: rgba(148, 163, 184, 0.24);
+                box-shadow: 0 12px 30px rgba(2, 6, 23, 0.30);
+            }
+
+            :root:not([data-theme]) input,
+            :root:not([data-theme]) textarea,
+            :root:not([data-theme]) .history-report-range-input {
+                background: #0b1220;
+                color: #f8fafc;
+                border-color: rgba(148, 163, 184, 0.34);
+            }
+
+            :root:not([data-theme]) .wallet-btn,
+            :root:not([data-theme]) .history-report-wallet-btn {
+                background: #111827;
+                color: #f8fafc;
+                border-color: rgba(148, 163, 184, 0.34);
+            }
+
+            :root:not([data-theme]) .history-report-panel,
+            :root:not([data-theme]) .history-report-modal {
+                background: linear-gradient(135deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.98));
+                color: #f8fafc;
+                border-color: rgba(251, 191, 36, 0.42);
+                box-shadow: 0 24px 70px rgba(2, 6, 23, 0.62);
+            }
+
+            :root:not([data-theme]) .history-report-modal .history-report-title,
+            :root:not([data-theme]) .history-report-title {
+                color: #f8fafc;
+            }
+
+            :root:not([data-theme]) .history-report-modal .history-report-wallet-label,
+            :root:not([data-theme]) .history-report-modal .history-report-date-field label,
+            :root:not([data-theme]) .history-report-wallet-label,
+            :root:not([data-theme]) .history-report-date-field label {
+                color: #cbd5e1;
+            }
+
+            :root:not([data-theme]) .history-report-wallet-btn.active,
+            :root:not([data-theme]) .history-report-modal #historyReportWalletAll.active {
+                border-color: #38bdf8;
+                background: rgba(14, 165, 233, 0.20);
+                color: #e0f2fe;
+            }
+
+            :root:not([data-theme]) .history-report-modal #historyReportWalletJawwal.active {
+                border-color: var(--jawwal-green);
+                background: rgba(140, 198, 63, 0.20);
+                color: #ecfccb;
+            }
+
+            :root:not([data-theme]) .history-report-modal #historyReportWalletPalpay.active {
+                border-color: #a78bfa;
+                background: rgba(167, 139, 250, 0.20);
+                color: #ede9fe;
+            }
+
+            :root:not([data-theme]) .history-filter-btn {
+                background: rgba(59, 130, 246, 0.18);
+                color: #bfdbfe;
+            }
+
+            :root:not([data-theme]) .history-report-btn,
+            :root:not([data-theme]) .history-summary-day-btn {
+                background: rgba(245, 158, 11, 0.18);
+                color: #fde68a;
+            }
+
+            :root:not([data-theme]) .history-summary-month-btn {
+                background: rgba(139, 92, 246, 0.20);
+                color: #ddd6fe;
+            }
+
+            :root:not([data-theme]) .history-transfer-btn,
+            :root:not([data-theme]) .history-clear-filter-btn {
+                background: rgba(20, 184, 166, 0.18);
+                color: #99f6e4;
+            }
+
+            :root:not([data-theme]) .history-clear-all-btn,
+            :root:not([data-theme]) .history-report-close-btn,
+            :root:not([data-theme]) .transfer-close-btn {
+                background: rgba(248, 113, 113, 0.18);
+                color: #fecaca;
+            }
+
+            :root:not([data-theme]) .transfer-secondary-btn {
+                background: rgba(148, 163, 184, 0.14);
+                color: #e2e8f0;
+            }
+
+            :root:not([data-theme]) .wallet-required-message {
+                background: linear-gradient(135deg, rgba(8, 47, 73, 0.96), rgba(19, 78, 74, 0.96));
+                color: #e0f2fe;
+                border-color: rgba(56, 189, 248, 0.30);
+            }
+
+            :root:not([data-theme]) .delete-history-warning {
+                background: linear-gradient(135deg, rgba(127, 29, 29, 0.42), rgba(124, 45, 18, 0.34));
+                color: #fecaca;
+                border-color: rgba(248, 113, 113, 0.30);
+            }
+
+            :root:not([data-theme]) .delete-history-summary,
+            :root:not([data-theme]) .update-notes-box {
+                background: rgba(15, 23, 42, 0.78);
+                border-color: rgba(148, 163, 184, 0.24);
+            }
+
+            :root:not([data-theme]) .info-box {
+                background: rgba(59, 130, 246, 0.12);
+                color: #dbeafe;
+            }
+        }
+
         @keyframes updateSpin {
             to { transform: rotate(360deg); }
         }
@@ -1213,6 +1642,32 @@
             color: #0369a1;
         }
 
+        html[data-theme="dark"] .transfer-paste-btn {
+            background: rgba(16, 185, 129, 0.18);
+            color: #bbf7d0;
+            border: 1px solid rgba(74, 222, 128, 0.24);
+        }
+
+        html[data-theme="dark"] .transfer-file-btn {
+            background: rgba(14, 165, 233, 0.18);
+            color: #bae6fd;
+            border: 1px solid rgba(56, 189, 248, 0.24);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme]) .transfer-paste-btn {
+                background: rgba(16, 185, 129, 0.18);
+                color: #bbf7d0;
+                border: 1px solid rgba(74, 222, 128, 0.24);
+            }
+
+            :root:not([data-theme]) .transfer-file-btn {
+                background: rgba(14, 165, 233, 0.18);
+                color: #bae6fd;
+                border: 1px solid rgba(56, 189, 248, 0.24);
+            }
+        }
+
         #toast {
             position: fixed;
             bottom: 20px;
@@ -1231,6 +1686,9 @@
 
 <div class="app-wrapper">
     <div class="header-frame">
+        <button type="button" class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" aria-label="تفعيل الوضع النهاري" title="تفعيل الوضع النهاري">
+            <span class="theme-toggle-icon" id="themeToggleIcon" aria-hidden="true">☀</span>
+        </button>
         <h1>صانع كود الـ USSD</h1>
         <p>سهولة التحويل في ثوانٍ</p>
     </div>
@@ -1375,8 +1833,8 @@
     </div>
 
     <div class="signature-card">
-        <p class="signature-text">فكرة وتصميم/ م. فراس محمد سحويل  (أبو محمد )</p>
-        <p class="signature-dua">التطبيق صدقة جارية عن روح شهداء مدينة بيت حانون ، دعواتكم لهم .</p>
+        <p class="signature-text">فكرة وتصميم/ م. فراس محمد سحويل  (أبو محممد)</p>
+        <p class="signature-dua">هذا التطبيق مخصص لتسهيل عمليات التحويل بدون الحاجة إلى الإنترنت، بطريقة سريعة وبسيطة وآمنة.</p>
     </div>
 </div>
 
@@ -1405,6 +1863,36 @@
         <div class="delete-history-actions">
             <button type="button" class="delete-history-confirm-btn" onclick="confirmClearHistory()">تأكيد الحذف</button>
             <button type="button" class="transfer-secondary-btn" onclick="closeHistoryDeleteModal()">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div class="transfer-modal-backdrop" id="historyItemDeleteModal" onclick="handleHistoryItemDeleteBackdrop(event)">
+    <div class="transfer-modal delete-history-modal" role="dialog" aria-modal="true" aria-labelledby="historyItemDeleteTitle">
+        <div class="transfer-modal-header">
+            <div class="transfer-modal-title" id="historyItemDeleteTitle">حذف حركة محددة</div>
+            <button type="button" class="transfer-close-btn" onclick="closeHistoryItemDeleteModal()" aria-label="إغلاق">×</button>
+        </div>
+        <p class="delete-history-warning">
+            سيتم حذف هذه الحركة فقط من سجل الحركات. لا يمكن التراجع عن هذه الخطوة بعد التأكيد.
+        </p>
+        <div class="delete-history-summary" aria-label="تفاصيل الحركة المراد حذفها">
+            <div class="delete-history-summary-row">
+                <span class="delete-history-summary-label">رقم الهاتف</span>
+                <span class="delete-history-summary-value" id="deleteHistoryItemPhone">-</span>
+            </div>
+            <div class="delete-history-summary-row">
+                <span class="delete-history-summary-label">المبلغ</span>
+                <span class="delete-history-summary-value" id="deleteHistoryItemAmount">-</span>
+            </div>
+            <div class="delete-history-summary-row">
+                <span class="delete-history-summary-label">التوقيت</span>
+                <span class="delete-history-summary-value" id="deleteHistoryItemTimestamp">-</span>
+            </div>
+        </div>
+        <div class="delete-history-actions">
+            <button type="button" class="delete-history-confirm-btn" onclick="confirmDeleteHistoryItem()">تأكيد الحذف</button>
+            <button type="button" class="transfer-secondary-btn" onclick="closeHistoryItemDeleteModal()">إلغاء</button>
         </div>
     </div>
 </div>
@@ -1963,9 +2451,98 @@
     let historySearchQuery = '';
     let activeHistoryReportWallet = 'all';
     let editingHistoryItemId = '';
+    let deletingHistoryItemId = '';
     const historyKey = 'ussd_history_v21'; 
+    const themePreferenceKey = 'ussd_theme_preference';
 
     window.onload = loadHistory;
+
+    function getSystemTheme() {
+        return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    function getCurrentTheme() {
+        return document.documentElement.getAttribute('data-theme') || getSystemTheme();
+    }
+
+    function updateThemeToggleButton(theme) {
+        const toggleBtn = document.getElementById('themeToggleBtn');
+        const toggleIcon = document.getElementById('themeToggleIcon');
+        const nextModeLabel = theme === 'dark' ? 'تفعيل الوضع النهاري' : 'تفعيل الوضع الليلي';
+        if (toggleIcon) toggleIcon.textContent = theme === 'dark' ? '☀' : '☾';
+        if (toggleBtn) {
+            toggleBtn.setAttribute('aria-label', nextModeLabel);
+            toggleBtn.setAttribute('title', nextModeLabel);
+        }
+    }
+
+    function updateThemeColorMeta(theme) {
+        const themeColorMeta = document.getElementById('themeColorMeta');
+        if (themeColorMeta) themeColorMeta.setAttribute('content', theme === 'dark' ? '#0f172a' : '#f8fafc');
+    }
+
+    function applyTheme(theme, shouldSave = true) {
+        document.documentElement.setAttribute('data-theme', theme);
+        if (shouldSave) {
+            localStorage.setItem(themePreferenceKey, theme);
+        }
+        updateThemeToggleButton(theme);
+        updateThemeColorMeta(theme);
+    }
+
+    function toggleTheme() {
+        const nextTheme = getCurrentTheme() === 'dark' ? 'light' : 'dark';
+        applyTheme(nextTheme);
+        showToast(nextTheme === 'dark' ? 'تم تفعيل الوضع الليلي' : 'تم تفعيل الوضع النهاري');
+    }
+
+    function initThemeToggle() {
+        const savedTheme = localStorage.getItem(themePreferenceKey);
+        const currentTheme = savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : getSystemTheme();
+        if (savedTheme === 'light' || savedTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+        updateThemeToggleButton(currentTheme);
+        updateThemeColorMeta(currentTheme);
+
+        if (window.matchMedia) {
+            const systemThemeQuery = window.matchMedia('(prefers-color-scheme: dark)');
+            const handleSystemThemeChange = () => {
+                const hasManualTheme = localStorage.getItem(themePreferenceKey);
+                if (!hasManualTheme) {
+                    const systemTheme = getSystemTheme();
+                    updateThemeToggleButton(systemTheme);
+                    updateThemeColorMeta(systemTheme);
+                }
+            };
+            if (systemThemeQuery.addEventListener) {
+                systemThemeQuery.addEventListener('change', handleSystemThemeChange);
+            } else if (systemThemeQuery.addListener) {
+                systemThemeQuery.addListener(handleSystemThemeChange);
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', initThemeToggle);
+
+    function clearPressedControl() {
+        const activeElement = document.activeElement;
+        if (activeElement && activeElement.matches && activeElement.matches('button, .history-item, [role="button"]')) {
+            activeElement.blur();
+        }
+    }
+
+    document.addEventListener('touchend', event => {
+        if (event.target && event.target.closest && event.target.closest('button, .history-item, [role="button"]')) {
+            setTimeout(clearPressedControl, 70);
+        }
+    }, { passive: true });
+
+    document.addEventListener('pointerup', event => {
+        if ((event.pointerType === 'touch' || event.pointerType === 'pen') && event.target && event.target.closest && event.target.closest('button, .history-item, [role="button"]')) {
+            setTimeout(clearPressedControl, 70);
+        }
+    }, { passive: true });
 
     function showToast(message, duration = 1400) {
         const toast = document.getElementById('toast');
@@ -3229,16 +3806,62 @@
 
     function deleteHistoryItem(event, id) {
         event.stopPropagation();
-        if (!confirm('هل تريد حذف هذه الحركة فقط؟')) return;
+
+        const result = getHistoryItemById(id);
+        if (!result.item) {
+            showToast('لم يتم العثور على الحركة');
+            return;
+        }
+
+        deletingHistoryItemId = id;
+        const phoneText = document.getElementById('deleteHistoryItemPhone');
+        const amountText = document.getElementById('deleteHistoryItemAmount');
+        const timestampText = document.getElementById('deleteHistoryItemTimestamp');
+        if (phoneText) phoneText.textContent = result.item.phone || '-';
+        if (amountText) amountText.textContent = result.item.amount ? result.item.amount + ' شيكل' : '-';
+        if (timestampText) timestampText.textContent = result.item.timestamp || '-';
+
+        const modal = document.getElementById('historyItemDeleteModal');
+        if (modal) modal.style.display = 'flex';
+    }
+
+    function closeHistoryItemDeleteModal() {
+        const modal = document.getElementById('historyItemDeleteModal');
+        if (modal) modal.style.display = 'none';
+        deletingHistoryItemId = '';
+    }
+
+    function handleHistoryItemDeleteBackdrop(event) {
+        if (event.target && event.target.id === 'historyItemDeleteModal') {
+            closeHistoryItemDeleteModal();
+        }
+    }
+
+    function confirmDeleteHistoryItem() {
+        const id = deletingHistoryItemId;
+        if (!id) {
+            closeHistoryItemDeleteModal();
+            return;
+        }
 
         let history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        const oldLength = history.length;
         history = history.filter((item, index) => {
             const itemId = getHistoryItemId(item, index);
             return itemId !== id;
         });
+
+        if (history.length === oldLength) {
+            closeHistoryItemDeleteModal();
+            showToast('لم يتم العثور على الحركة');
+            return;
+        }
+
         localStorage.setItem(historyKey, JSON.stringify(history));
+        closeHistoryItemDeleteModal();
         hideHistorySummaryCard();
         loadHistory();
+        showToast('تم حذف الحركة');
     }
 
     function toggleMore() {
@@ -3292,6 +3915,5 @@
         showToast('تم حذف جميع الحركات');
     }
 </script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"1a09ef8a34cf4ef9911950035033cc39","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
