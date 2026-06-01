@@ -1,0 +1,3297 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>صانع كود الـ USSD</title>
+    
+    <!-- إعدادات تطبيق الويب (PWA) -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1e293b">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
+    <style>
+        @font-face {
+            font-family: 'TajawalLocal';
+            src: url('./Tajawal-Regular.ttf') format('truetype');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        :root {
+            --jawwal-green: #8cc63f; 
+            --palpay-purple: #6a359c; 
+            --bop-magenta: #b51b72; 
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-sub: #64748b;
+            --border-color: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #0f172a;
+                --card-bg: #1e293b;
+                --text-main: #f1f5f9;
+                --text-sub: #94a3b8;
+                --border-color: #334155;
+            }
+        }
+
+        html {
+            -webkit-font-smoothing: antialiased;
+            text-rendering: optimizeLegibility;
+        }
+
+        *,
+        *::before,
+        *::after {
+            font-family: 'TajawalLocal', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        }
+
+        button,
+        input,
+        textarea,
+        select,
+        option {
+            font-family: 'TajawalLocal', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+        }
+
+        body {
+            font-family: 'TajawalLocal', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+            box-sizing: border-box;
+            transition: background 0.3s ease;
+        }
+
+        .app-wrapper {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .header-frame {
+            border: 1px solid rgba(15, 118, 110, 0.35);
+            background: linear-gradient(135deg, #0f766e, #14b8a6);
+            border-radius: 16px;
+            padding: 12px 10px;
+            margin-bottom: 12px;
+            text-align: center;
+            box-shadow: 0 8px 22px rgba(15, 118, 110, 0.25);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header-frame::before {
+            content: '';
+            position: absolute;
+            top: -35px;
+            left: -35px;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .header-frame h1 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            margin: 0;
+            color: #ffffff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.20);
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-frame p {
+            color: rgba(255, 255, 255, 0.88);
+            margin: 2px 0 0 0;
+            font-size: 0.8rem;
+            font-weight: 700;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* بطاقة زر التثبيت الجديدة */
+        .install-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
+            border: 2px dashed #3b82f6;
+            margin-bottom: 12px;
+            text-align: center;
+            display: none; /* مخفي افتراضياً، يظهر فقط إذا كان الجهاز يدعم التثبيت */
+        }
+
+        .install-card p {
+            margin: 0 0 10px 0;
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: var(--text-main);
+        }
+
+        /* تنسيق زر تثبيت التطبيق */
+        .install-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 800;
+            color: white;
+            cursor: pointer;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.98); }
+            100% { transform: scale(1); }
+        }
+
+        .install-btn svg { width: 22px; height: 22px; }
+
+        /* بطاقة فتح الرابط في Chrome عند الدخول من متصفح فيسبوك الداخلي */
+        .external-browser-card {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(245, 158, 11, 0.10));
+            border: 2px solid rgba(245, 158, 11, 0.65);
+            border-radius: 16px;
+            padding: 14px;
+            margin-bottom: 12px;
+            text-align: center;
+            display: none;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.18);
+        }
+
+        .external-browser-card h2 {
+            margin: 0 0 6px 0;
+            font-size: 1rem;
+            color: var(--text-main);
+            font-weight: 900;
+        }
+
+        .external-browser-card p {
+            margin: 0 0 10px 0;
+            font-size: 0.82rem;
+            color: var(--text-sub);
+            line-height: 1.6;
+            font-weight: 700;
+        }
+
+        .external-browser-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 900;
+            color: #ffffff;
+            cursor: pointer;
+            background: linear-gradient(135deg, #f59e0b, #ef4444);
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.28);
+        }
+
+        .external-browser-small {
+            display: block;
+            margin-top: 8px;
+            color: var(--text-sub);
+            font-size: 0.72rem;
+            line-height: 1.5;
+        }
+
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 15px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            margin-bottom: 12px;
+        }
+
+        .wallet-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .wallet-btn {
+            min-height: 86px;
+            border: 2px solid var(--border-color);
+            background: var(--bg-color);
+            border-radius: 16px;
+            padding: 9px 6px 8px;
+            cursor: pointer;
+            transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            color: var(--text-main);
+        }
+
+        .wallet-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 22px rgba(15, 23, 42, 0.10);
+        }
+
+        .wallet-logo {
+            width: 58px;
+            height: 34px;
+            object-fit: contain;
+            display: block;
+            pointer-events: none;
+        }
+
+        .wallet-name {
+            font-family: 'TajawalLocal', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 800;
+            line-height: 1.1;
+            color: var(--text-main);
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .wallet-btn.active {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 26px rgba(15, 23, 42, 0.14);
+        }
+
+        .wallet-btn.active.jawwal { border-color: var(--jawwal-green); background: rgba(140, 198, 63, 0.1); }
+        .wallet-btn.active.palpay { border-color: var(--palpay-purple); background: rgba(106, 53, 156, 0.1); }
+        .wallet-btn.bop { color: var(--text-main); }
+        .wallet-btn.bop:hover, .wallet-btn.active.bop { border-color: var(--bop-magenta); background: rgba(181, 27, 114, 0.1); }
+
+        .input-group {
+            margin-top: 12px;
+        }
+
+        label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 4px;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            font-size: 1.1rem;
+            background: var(--bg-color);
+            color: var(--text-main);
+            outline: none;
+            transition: border-color 0.2s;
+            font-weight: bold;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        input:focus, textarea:focus { border-color: #3b82f6; }
+
+
+        input::placeholder,
+        textarea::placeholder {
+            font-family: 'TajawalLocal', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+            color: rgba(100, 116, 139, 0.30) !important;
+            opacity: 1 !important;
+            font-weight: 400 !important;
+        }
+
+        input::-webkit-input-placeholder,
+        textarea::-webkit-input-placeholder {
+            font-family: 'TajawalLocal', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+            color: rgba(100, 116, 139, 0.30) !important;
+            opacity: 1 !important;
+            font-weight: 400 !important;
+        }
+
+        input::-moz-placeholder,
+        textarea::-moz-placeholder {
+            font-family: 'TajawalLocal', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+            color: rgba(100, 116, 139, 0.30) !important;
+            opacity: 1 !important;
+            font-weight: 400 !important;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            input::placeholder,
+            textarea::placeholder,
+            input::-webkit-input-placeholder,
+            textarea::-webkit-input-placeholder,
+            input::-moz-placeholder,
+            textarea::-moz-placeholder {
+                color: rgba(148, 163, 184, 0.34) !important;
+            }
+        }
+
+
+        textarea {
+            min-height: 70px;
+            resize: vertical;
+            text-align: right;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: white;
+            cursor: pointer;
+            margin-top: 12px;
+            background: linear-gradient(135deg, #0ea5e9, #2563eb);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .action-btn svg { width: 20px; height: 20px; }
+
+        .action-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        input:disabled, textarea:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+
+        .history-section {
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        .history-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-sub);
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding: 0 5px;
+        }
+
+        .history-controls {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .history-search {
+            position: relative;
+            margin: 0 0 8px 0;
+        }
+
+        .history-search-input {
+            width: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            background: var(--card-bg);
+            color: var(--text-main);
+            padding: 10px 12px;
+            font-size: 0.86rem;
+            font-weight: 700;
+            outline: none;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .history-search-input:focus {
+            border-color: rgba(37, 99, 235, 0.55);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .history-filter-btn,
+        .history-update-btn,
+        .history-report-btn,
+        .history-transfer-btn,
+        .history-summary-day-btn,
+        .history-summary-month-btn,
+        .history-summary-range-btn,
+        .history-report-close-btn,
+        .history-clear-filter-btn,
+        .history-clear-all-btn {
+            border: none;
+            border-radius: 8px;
+            padding: 6px 8px;
+            cursor: pointer;
+            font-size: 0.72rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .history-filter-btn {
+            background: rgba(59, 130, 246, 0.10);
+            color: #2563eb;
+        }
+
+        .history-update-btn {
+            background: linear-gradient(135deg, #4c1d95, #6d28d9);
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(109, 40, 217, 0.30);
+        }
+
+        .history-report-btn {
+            background: rgba(245, 158, 11, 0.13);
+            color: #d97706;
+        }
+
+        .history-transfer-btn {
+            background: linear-gradient(135deg, rgba(20, 184, 166, 0.18), rgba(16, 185, 129, 0.18));
+            color: #047857;
+            box-shadow: inset 0 0 0 1px rgba(5, 150, 105, 0.18);
+        }
+
+        .history-summary-day-btn {
+            background: rgba(245, 158, 11, 0.13);
+            color: #d97706;
+        }
+
+        .history-summary-month-btn {
+            background: rgba(139, 92, 246, 0.13);
+            color: #7c3aed;
+        }
+
+        .history-summary-range-btn {
+            background: #0f766e;
+            color: #ffffff;
+        }
+
+        .history-clear-filter-btn {
+            background: rgba(16, 185, 129, 0.10);
+            color: #059669;
+            display: none;
+        }
+
+        .history-clear-all-btn {
+            background: rgba(239, 68, 68, 0.10);
+            color: #ef4444;
+        }
+
+        .history-date-input,
+        .history-month-input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .history-filter-status,
+        .history-empty-message {
+            font-size: 0.75rem;
+            color: var(--text-sub);
+            background: var(--card-bg);
+            border: 1px dashed var(--border-color);
+            border-radius: 10px;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            text-align: center;
+            display: none;
+        }
+
+        .history-report-panel {
+            display: none;
+            margin-bottom: 8px;
+            padding: 10px;
+            border-radius: 16px;
+            border: 1px solid rgba(245, 158, 11, 0.28);
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(139, 92, 246, 0.08));
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.07);
+        }
+
+        .history-report-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+
+        .history-report-title {
+            font-size: 0.78rem;
+            font-weight: 900;
+            color: var(--text-main);
+        }
+
+        .history-report-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 0;
+        }
+
+        .history-report-date-range {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 7px;
+        }
+
+        .history-report-date-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .history-report-date-field label {
+            color: var(--text-sub);
+            font-size: 0.68rem;
+            font-weight: 900;
+            text-align: center;
+        }
+
+        .history-report-range-input {
+            width: 100%;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 6px 8px;
+            background: #ffffff;
+            color: var(--text-main);
+            font-size: 0.74rem;
+            font-weight: 800;
+            text-align: center;
+            min-height: 34px;
+            box-sizing: border-box;
+        }
+
+        .history-report-wallet-panel {
+            margin-bottom: 7px;
+        }
+
+        .history-report-wallet-label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--text-sub);
+            font-size: 0.7rem;
+            font-weight: 900;
+            text-align: center;
+        }
+
+        .history-report-wallet-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+        }
+
+        .history-report-wallet-btn {
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 7px 5px;
+            cursor: pointer;
+            background: #ffffff;
+            color: var(--text-main);
+            font-size: 0.72rem;
+            font-weight: 900;
+            line-height: 1.2;
+            min-height: 34px;
+        }
+
+        .history-report-wallet-btn.active {
+            border-color: #0f766e;
+            background: #d1fae5;
+            color: #065f46;
+            box-shadow: inset 0 0 0 1px rgba(15, 118, 110, 0.18);
+        }
+
+        .history-report-close-btn {
+            background: #fee2e2;
+            color: #dc2626;
+            flex-shrink: 0;
+        }
+
+        .history-report-modal {
+            display: block;
+            width: 100%;
+            max-width: 390px;
+            max-height: calc(100vh - 32px);
+            margin-bottom: 0;
+            overflow-y: auto;
+            box-sizing: border-box;
+            padding: 12px;
+            border: 1px solid #f59e0b;
+            background: #ffffff;
+            color: #1e293b;
+            box-shadow: 0 24px 70px rgba(15, 23, 42, 0.38);
+        }
+
+        .history-report-modal .history-report-title {
+            color: #1e293b;
+        }
+
+        .history-report-modal .history-report-wallet-label,
+        .history-report-modal .history-report-date-field label {
+            color: #64748b;
+        }
+
+        .history-report-modal .history-report-actions .history-summary-range-btn,
+        .history-report-modal .history-report-actions .history-report-close-btn {
+            min-height: 42px;
+            padding: 11px 10px;
+            font-size: 0.78rem;
+        }
+
+        .history-report-modal #historyReportWalletAll.active {
+            border-color: #0ea5e9;
+            background: #e0f2fe;
+            color: #0369a1;
+            box-shadow: inset 0 0 0 1px rgba(14, 165, 233, 0.22);
+        }
+
+        .history-report-modal #historyReportWalletJawwal.active {
+            border-color: var(--jawwal-green);
+            background: rgba(140, 198, 63, 0.22);
+            color: #3f7f14;
+            box-shadow: inset 0 0 0 1px rgba(140, 198, 63, 0.26);
+        }
+
+        .history-report-modal #historyReportWalletPalpay.active {
+            border-color: var(--palpay-purple);
+            background: rgba(106, 53, 156, 0.18);
+            color: var(--palpay-purple);
+            box-shadow: inset 0 0 0 1px rgba(106, 53, 156, 0.24);
+        }
+
+        .history-summary-card {
+            display: none;
+            margin-bottom: 8px;
+            padding: 12px;
+            border-radius: 16px;
+            border: 1px solid rgba(14, 165, 233, 0.28);
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.10), rgba(16, 185, 129, 0.10));
+            box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+        }
+
+        .history-summary-card h3 {
+            margin: 0 0 8px 0;
+            font-size: 0.9rem;
+            font-weight: 900;
+            color: var(--text-main);
+            text-align: center;
+        }
+
+        .history-summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .history-summary-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px 6px;
+            text-align: center;
+        }
+
+        .history-summary-label {
+            display: block;
+            font-size: 0.72rem;
+            color: var(--text-sub);
+            font-weight: 800;
+            margin-bottom: 4px;
+        }
+
+        .history-summary-value {
+            display: block;
+            font-size: 1.05rem;
+            color: var(--text-main);
+            font-weight: 900;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .history-item {
+            background: var(--card-bg);
+            padding: 8px 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .history-details {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .history-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .edit-history-btn,
+        .delete-history-btn {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 900;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .edit-history-btn {
+            background: rgba(14, 165, 233, 0.12);
+            color: #0284c7;
+            font-size: 0.92rem;
+        }
+
+        .delete-history-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .history-note {
+            margin-top: 3px;
+            font-size: 0.72rem;
+            color: var(--text-sub);
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .history-item.hidden {
+            display: none;
+        }
+
+        .more-btn {
+            width: 100%;
+            background: transparent;
+            border: 1px dashed var(--text-sub);
+            color: var(--text-sub);
+            padding: 8px;
+            border-radius: 10px;
+            margin-top: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .signature-card {
+            background: linear-gradient(135deg, #0f766e, #14b8a6);
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 8px 22px rgba(15, 118, 110, 0.24);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .signature-text {
+            color: #ffffff;
+            font-weight: 800;
+            margin: 0;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+        }
+
+        .signature-dua {
+            color: rgba(255, 255, 255, 0.92);
+            font-weight: 700;
+            margin: 3px 0 0 0;
+            font-size: 0.82rem;
+            line-height: 1.6;
+        }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: white;
+        }
+
+        .info-box {
+            background: rgba(59, 130, 246, 0.05);
+            border-right: 3px solid #3b82f6;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            margin-top: 10px;
+            line-height: 1.3;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 0.7rem;
+            margin-top: 4px;
+            font-weight: bold;
+            display: none;
+            text-align: center;
+        }
+
+        .transfer-modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.58);
+            backdrop-filter: blur(3px);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            box-sizing: border-box;
+        }
+
+        .transfer-modal {
+            width: 100%;
+            max-width: 390px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 18px;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.28);
+            padding: 14px;
+            box-sizing: border-box;
+        }
+
+        .transfer-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .transfer-modal-title {
+            font-size: 1rem;
+            font-weight: 900;
+            color: var(--text-main);
+        }
+
+        .transfer-close-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(239, 68, 68, 0.10);
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: 900;
+            line-height: 1;
+        }
+
+        .transfer-choice-grid,
+        .transfer-import-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .transfer-action-btn,
+        .transfer-secondary-btn,
+        .transfer-import-btn {
+            border: none;
+            border-radius: 12px;
+            padding: 12px 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 900;
+        }
+
+        .transfer-action-btn.export {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #ffffff;
+        }
+
+        .transfer-action-btn.import,
+        .transfer-import-btn {
+            background: linear-gradient(135deg, #0ea5e9, #2563eb);
+            color: #ffffff;
+        }
+
+        .transfer-secondary-btn {
+            background: rgba(100, 116, 139, 0.12);
+            color: var(--text-main);
+        }
+
+        .wallet-required-modal {
+            border-color: rgba(14, 165, 233, 0.32);
+            box-shadow: 0 24px 70px rgba(14, 116, 144, 0.24);
+        }
+
+        .wallet-required-message {
+            margin: 0 0 12px 0;
+            padding: 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(14, 165, 233, 0.22);
+            background: linear-gradient(135deg, rgba(224, 242, 254, 0.98), rgba(209, 250, 229, 0.98));
+            color: #0f172a;
+            font-size: 0.86rem;
+            font-weight: 900;
+            line-height: 1.7;
+            text-align: center;
+        }
+
+        .wallet-required-ok-btn {
+            width: 100%;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #0ea5e9, #0f766e);
+            color: #ffffff;
+            box-shadow: 0 8px 18px rgba(14, 165, 233, 0.24);
+        }
+
+        .delete-history-modal {
+            border-color: rgba(239, 68, 68, 0.28);
+            box-shadow: 0 24px 70px rgba(127, 29, 29, 0.28);
+        }
+
+        .delete-history-warning {
+            margin: 0 0 12px 0;
+            padding: 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(239, 68, 68, 0.22);
+            background: linear-gradient(135deg, rgba(254, 226, 226, 0.95), rgba(255, 247, 237, 0.95));
+            color: #7f1d1d;
+            font-size: 0.84rem;
+            font-weight: 800;
+            line-height: 1.7;
+            text-align: center;
+        }
+
+        .delete-history-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .delete-history-confirm-btn {
+            border: none;
+            border-radius: 12px;
+            padding: 12px 10px;
+            cursor: pointer;
+            font-size: 0.88rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: #ffffff;
+            box-shadow: 0 8px 18px rgba(220, 38, 38, 0.24);
+        }
+
+        .transfer-help {
+            margin: 0 0 10px 0;
+            color: var(--text-sub);
+            font-size: 0.78rem;
+            line-height: 1.6;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .edit-history-form {
+            display: grid;
+            gap: 9px;
+        }
+
+        .edit-history-field label {
+            display: block;
+            margin-bottom: 4px;
+            color: var(--text-main);
+            font-size: 0.76rem;
+            font-weight: 900;
+        }
+
+        .edit-history-field input,
+        .edit-history-field textarea {
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #historyReportModal {
+            background: rgba(15, 23, 42, 0.68);
+            backdrop-filter: blur(2px);
+        }
+
+        .edit-history-field textarea {
+            min-height: 78px;
+            resize: vertical;
+        }
+
+        .edit-history-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 3px;
+        }
+
+        .update-notes-box {
+            background: rgba(14, 165, 233, 0.08);
+            border: 1px solid rgba(14, 165, 233, 0.22);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .update-notes-title {
+            margin: 0 0 7px 0;
+            color: var(--text-main);
+            font-size: 0.86rem;
+            font-weight: 900;
+        }
+
+        .update-date {
+            margin: -2px 0 8px 0;
+            color: var(--text-sub);
+            font-size: 0.76rem;
+            font-weight: 800;
+        }
+
+        .update-notes-list {
+            margin: 0;
+            padding: 0 18px 0 0;
+            color: var(--text-main);
+            font-size: 0.82rem;
+            line-height: 1.7;
+            font-weight: 700;
+        }
+
+        .update-warning {
+            margin: 0 0 10px 0;
+            color: var(--text-sub);
+            font-size: 0.78rem;
+            line-height: 1.7;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .update-modal-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .update-confirm-btn {
+            border: none;
+            border-radius: 12px;
+            padding: 12px 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #4c1d95, #6d28d9);
+            color: #ffffff;
+        }
+
+        .update-progress-modal {
+            text-align: center;
+            padding: 20px 16px;
+        }
+
+        #appUpdateProgressModal {
+            z-index: 1001;
+            background: rgba(15, 23, 42, 0.68);
+            backdrop-filter: blur(5px);
+        }
+
+        .update-spinner {
+            width: 54px;
+            height: 54px;
+            border-radius: 50%;
+            border: 5px solid rgba(109, 40, 217, 0.16);
+            border-top-color: #6d28d9;
+            margin: 0 auto 14px;
+            animation: updateSpin 0.9s linear infinite;
+        }
+
+        .update-progress-title {
+            margin: 0 0 6px 0;
+            color: var(--text-main);
+            font-size: 1rem;
+            font-weight: 900;
+        }
+
+        .update-progress-text {
+            margin: 0;
+            color: var(--text-sub);
+            font-size: 0.82rem;
+            line-height: 1.7;
+            font-weight: 700;
+        }
+
+        .update-progress-modal.success .update-spinner {
+            border-color: rgba(16, 185, 129, 0.18);
+            border-top-color: #10b981;
+            animation-duration: 1.2s;
+        }
+
+        @keyframes updateSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        .edit-history-save-btn {
+            border: none;
+            border-radius: 12px;
+            padding: 12px 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: #ffffff;
+        }
+
+        .transfer-import-textarea {
+            min-height: 150px;
+            margin-bottom: 8px;
+            font-size: 0.82rem;
+            direction: ltr;
+            text-align: left;
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace !important;
+            font-weight: 600;
+        }
+
+        .transfer-paste-btn,
+        .transfer-file-btn {
+            width: 100%;
+            border: none;
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            background: rgba(16, 185, 129, 0.12);
+            color: #059669;
+            font-size: 0.86rem;
+            font-weight: 900;
+        }
+
+        .transfer-file-btn {
+            background: rgba(14, 165, 233, 0.12);
+            color: #0369a1;
+        }
+
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            background: #10b981;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-weight: bold;
+            display: none;
+            z-index: 1000;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-wrapper">
+    <div class="header-frame">
+        <h1>صانع كود الـ USSD</h1>
+        <p>سهولة التحويل في ثوانٍ</p>
+    </div>
+
+    <!-- بطاقة التثبيت الجديدة -->
+    <div id="installCard" class="install-card">
+        <p>احصل على تجربة أفضل وبدون إنترنت!</p>
+        <button id="installAppBtn" class="install-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            تثبيت التطبيق على الجهاز
+        </button>
+    </div>
+
+    <!-- تظهر هذه البطاقة فقط عند فتح الرابط داخل متصفح فيسبوك الداخلي -->
+    <div id="externalBrowserCard" class="external-browser-card">
+        <h2>افتح التطبيق من Chrome للتثبيت</h2>
+        <p>يبدو أنك فتحت الرابط من داخل فيسبوك. تثبيت التطبيق يعمل بشكل أفضل من متصفح Chrome الخارجي.</p>
+        <button id="openInChromeBtn" class="external-browser-btn" type="button">فتح في Chrome الآن</button>
+        <span class="external-browser-small">إذا لم يفتح Chrome تلقائيًا: اضغط ⋯ في فيسبوك ثم اختر فتح في متصفح خارجي.</span>
+    </div>
+
+    <div class="card">
+        <label>1. اختر المحفظة</label>
+        <div class="wallet-selector">
+            <button class="wallet-btn jawwal" id="btnJawwal" onclick="selectWallet('jawwal')" aria-label="جوال باي" title="جوال باي">
+                <img class="wallet-logo" src="Jawwalpay.png" alt="جوال باي" loading="eager">
+                <span class="wallet-name">جوال باي</span>
+            </button>
+            <button class="wallet-btn palpay" id="btnPalpay" onclick="selectWallet('palpay')" aria-label="بال باي" title="بال باي">
+                <img class="wallet-logo" src="palpay.png" alt="بال باي" loading="eager">
+                <span class="wallet-name">بال باي</span>
+            </button>
+            <button class="wallet-btn bop" id="btnBop" onclick="openBankOfPalestine()" aria-label="بنك فلسطين" title="فتح كود بنك فلسطين">
+                <img class="wallet-logo" src="pal.png" alt="بنك فلسطين" loading="eager">
+                <span class="wallet-name">بنك فلسطين</span>
+            </button>
+        </div>
+
+        <div class="input-group">
+            <label>2. رقم المستلم</label>
+            <input type="tel" id="phone" placeholder="05XXXXXXXX" maxlength="32" autocomplete="tel" oninput="handlePhoneInput(this)" onpaste="handlePhonePaste(event, this)">
+            <div id="phoneError" class="error-message">يجب أن يبدأ الرقم بـ 059 أو 056 (10 أرقام)</div>
+        </div>
+
+        <div class="input-group">
+            <label>3. المبلغ (بالشيكل)</label>
+            <input type="number" id="amount" placeholder="مثال: 10">
+            <div id="amountError" class="error-message">يجب أن يكون المبلغ بين 1 شيكل و 999 شيكل</div>
+        </div>
+
+        <div class="input-group">
+            <label>4. ملاحظات (اختياري)</label>
+            <textarea id="notes" placeholder="تظهر في سجل الحركات"></textarea>
+        </div>
+
+        <button class="action-btn" id="generateBtn" onclick="process()">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+            </svg>
+            إنشاء الكود والاتصال
+        </button>
+
+        <div class="info-box">
+            تنبيه: سيتم فتح لوحة الاتصال، فقط اضغط (اتصال).
+        </div>
+    </div>
+
+    <!-- السجل -->
+    <div class="history-section" id="historySection" style="display: none;">
+        <div class="history-title">
+            <span>سجل الحركات</span>
+            <div class="history-controls">
+                <button type="button" class="history-update-btn" id="historyUpdateBtn" onclick="checkForAppUpdate()">تحديث</button>
+                <button type="button" class="history-report-btn" id="historyReportBtn" onclick="openHistoryReportPanel()">تقرير</button>
+                <button type="button" class="history-transfer-btn" id="historyTransferBtn" onclick="openHistoryTransferMenu()">استيراد/تصدير</button>
+                <button type="button" class="history-clear-all-btn" id="historyClearAllBtn" onclick="clearHistory()">حذف الحركات</button>
+                <button type="button" class="history-clear-filter-btn" id="historyClearFilterBtn" onclick="clearHistoryDateFilter()">عرض الكل</button>
+                <input type="date" class="history-date-input" id="historyDateFilter" onchange="applyHistoryDateFilter(this.value)">
+                <input type="month" class="history-month-input" id="historyMonthFilter" onchange="applyHistoryMonthFilter(this.value)">
+                <input type="date" class="history-date-input" id="historySummaryDayInput" onchange="showHistoryDaySummary(this.value)">
+                <input type="month" class="history-month-input" id="historySummaryMonthInput" onchange="showHistoryMonthSummary(this.value)">
+            </div>
+        </div>
+        <div class="history-search" id="historySearchBox">
+            <input type="search" class="history-search-input" id="historySearchInput" placeholder="ابحث برقم الهاتف أو الملاحظات" autocomplete="off" oninput="applyHistorySearch(this.value)">
+        </div>
+        <div class="history-report-panel" id="historyFilterPanel">
+            <div class="history-report-header">
+                <span class="history-report-title">&#1575;&#1582;&#1578;&#1585; &#1606;&#1608;&#1593; &#1575;&#1604;&#1601;&#1604;&#1578;&#1585;&#1577;</span>
+                <button type="button" class="history-report-close-btn" onclick="closeHistoryFilterPanel()">&#1573;&#1594;&#1604;&#1575;&#1602;</button>
+            </div>
+            <div class="history-report-wallet-panel" id="historyFilterWalletPanel">
+                <span class="history-report-wallet-label">&#1575;&#1582;&#1578;&#1585; &#1575;&#1604;&#1605;&#1581;&#1601;&#1592;&#1577; &#1604;&#1604;&#1601;&#1604;&#1578;&#1585;&#1577;</span>
+                <div class="history-report-wallet-options">
+                    <button type="button" class="history-report-wallet-btn active" id="historyFilterWalletAll" onclick="setHistoryFilterWallet('all')">&#1575;&#1604;&#1603;&#1604; &#1605;&#1593;&#1611;&#1575;</button>
+                    <button type="button" class="history-report-wallet-btn" id="historyFilterWalletJawwal" onclick="setHistoryFilterWallet('jawwal')">&#1580;&#1608;&#1575;&#1604; &#1576;&#1575;&#1610;</button>
+                    <button type="button" class="history-report-wallet-btn" id="historyFilterWalletPalpay" onclick="setHistoryFilterWallet('palpay')">&#1576;&#1575;&#1604; &#1576;&#1575;&#1610;</button>
+                </div>
+            </div>
+            <div class="history-report-actions">
+                <button type="button" class="history-summary-day-btn" onclick="openHistoryDatePicker()">&#1601;&#1604;&#1578;&#1585;&#1577; &#1581;&#1587;&#1576; &#1575;&#1604;&#1610;&#1608;&#1605;</button>
+                <button type="button" class="history-summary-month-btn" onclick="openHistoryMonthPicker()">&#1601;&#1604;&#1578;&#1585;&#1577; &#1581;&#1587;&#1576; &#1575;&#1604;&#1588;&#1607;&#1585;</button>
+            </div>
+        </div>
+        <div class="history-filter-status" id="historyFilterStatus"></div>
+        <div class="transfer-modal-backdrop" id="historyReportModal" onclick="handleHistoryReportBackdrop(event)">
+        <div class="history-report-panel history-report-modal" id="historyReportPanel" role="dialog" aria-modal="true" aria-labelledby="historyReportTitle">
+            <div class="history-report-header">
+                <span class="history-report-title" id="historyReportTitle">اختر نوع التقرير</span>
+                <button type="button" class="history-report-close-btn" onclick="closeHistoryReportPanel()">إغلاق</button>
+            </div>
+            <div class="history-report-wallet-panel" id="historyReportWalletPanel">
+                <span class="history-report-wallet-label">&#1575;&#1582;&#1578;&#1585; &#1575;&#1604;&#1605;&#1581;&#1601;&#1592;&#1577; &#1604;&#1604;&#1578;&#1602;&#1585;&#1610;&#1585;</span>
+                <div class="history-report-wallet-options">
+                    <button type="button" class="history-report-wallet-btn active" id="historyReportWalletAll" onclick="setHistoryReportWallet('all')">&#1575;&#1604;&#1603;&#1604; &#1605;&#1593;&#1611;&#1575;</button>
+                    <button type="button" class="history-report-wallet-btn" id="historyReportWalletJawwal" onclick="setHistoryReportWallet('jawwal')">&#1580;&#1608;&#1575;&#1604; &#1576;&#1575;&#1610;</button>
+                    <button type="button" class="history-report-wallet-btn" id="historyReportWalletPalpay" onclick="setHistoryReportWallet('palpay')">&#1576;&#1575;&#1604; &#1576;&#1575;&#1610;</button>
+                </div>
+            </div>
+            <div class="history-report-date-range">
+                <div class="history-report-date-field">
+                    <label for="historyReportStartDate">تاريخ البداية</label>
+                    <input type="date" class="history-report-range-input" id="historyReportStartDate">
+                </div>
+                <div class="history-report-date-field">
+                    <label for="historyReportEndDate">تاريخ النهاية</label>
+                    <input type="date" class="history-report-range-input" id="historyReportEndDate">
+                </div>
+            </div>
+            <div class="history-report-actions">
+                <button type="button" class="history-summary-range-btn" id="historySummaryRangeBtn" onclick="showHistoryRangeSummary()">عرض التقرير</button>
+                <button type="button" class="history-report-close-btn" onclick="clearHistoryReportRange()">مسح التواريخ</button>
+            </div>
+        </div>
+        </div>
+        <div class="history-summary-card" id="historySummaryCard"></div>
+        <div class="history-empty-message" id="historyEmptyMessage">لا توجد حركات في هذا اليوم</div>
+        <div class="history-list" id="historyList"></div>
+        <button class="more-btn" id="moreBtn" onclick="toggleMore()">عرض المزيد</button>
+    </div>
+
+    <div class="signature-card">
+        <p class="signature-text">فكرة وتصميم/ م. فراس محمد سحويل  (أبو محمد )</p>
+        <p class="signature-dua">التطبيق صدقة جارية عن روح شهداء مدينة بيت حانون ، دعواتكم لهم .</p>
+    </div>
+</div>
+
+<div id="toast">تم نسخ الكود بنجاح</div>
+
+<div class="transfer-modal-backdrop" id="walletRequiredModal" onclick="handleWalletRequiredBackdrop(event)">
+    <div class="transfer-modal wallet-required-modal" role="dialog" aria-modal="true" aria-labelledby="walletRequiredTitle">
+        <div class="transfer-modal-header">
+            <div class="transfer-modal-title" id="walletRequiredTitle">اختيار المحفظة مطلوب</div>
+            <button type="button" class="transfer-close-btn" onclick="closeWalletRequiredModal()" aria-label="إغلاق">×</button>
+        </div>
+        <p class="wallet-required-message">الرجاء تحديد المحفظة أولًا قبل إنشاء الكود والاتصال.</p>
+        <button type="button" class="wallet-required-ok-btn" onclick="closeWalletRequiredModal()">موافق</button>
+    </div>
+</div>
+
+<div class="transfer-modal-backdrop" id="historyDeleteModal" onclick="handleHistoryDeleteBackdrop(event)">
+    <div class="transfer-modal delete-history-modal" role="dialog" aria-modal="true" aria-labelledby="historyDeleteTitle">
+        <div class="transfer-modal-header">
+            <div class="transfer-modal-title" id="historyDeleteTitle">حذف جميع الحركات</div>
+            <button type="button" class="transfer-close-btn" onclick="closeHistoryDeleteModal()" aria-label="إغلاق">×</button>
+        </div>
+        <p class="delete-history-warning">
+            سيتم حذف جميع الحركات المحفوظة نهائيًا. يرجى أخذ نسخة احتياطية من زر استيراد/تصدير قبل المتابعة.
+        </p>
+        <div class="delete-history-actions">
+            <button type="button" class="delete-history-confirm-btn" onclick="confirmClearHistory()">تأكيد الحذف</button>
+            <button type="button" class="transfer-secondary-btn" onclick="closeHistoryDeleteModal()">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div class="transfer-modal-backdrop" id="appUpdateModal" onclick="handleAppUpdateModalBackdrop(event)">
+    <div class="transfer-modal" role="dialog" aria-modal="true" aria-labelledby="appUpdateTitle">
+        <div class="transfer-modal-header">
+            <div class="transfer-modal-title" id="appUpdateTitle">يوجد تحديث جديد</div>
+            <button type="button" class="transfer-close-btn" onclick="resolveAppUpdateChoice(false)" aria-label="إغلاق">×</button>
+        </div>
+        <div class="update-notes-box">
+            <p class="update-notes-title">ما الجديد؟</p>
+            <p class="update-date" id="appUpdateDateText"></p>
+            <ul class="update-notes-list" id="appUpdateNotesList"></ul>
+        </div>
+        <p class="update-warning">ننصح بالتحديث عند الاتصال بالوايفاي، وأخذ نسخة احتياطية من سجل الحركات من زر استيراد/تصدير قبل المتابعة.</p>
+        <div class="update-modal-actions">
+            <button type="button" class="update-confirm-btn" onclick="resolveAppUpdateChoice(true)">تنزيل التحديث</button>
+            <button type="button" class="transfer-secondary-btn" onclick="resolveAppUpdateChoice(false)">إلغاء</button>
+        </div>
+    </div>
+</div>
+
+<div class="transfer-modal-backdrop" id="appUpdateProgressModal">
+    <div class="transfer-modal update-progress-modal" id="appUpdateProgressBox" role="dialog" aria-modal="true" aria-live="polite">
+        <div class="update-spinner" aria-hidden="true"></div>
+        <h3 class="update-progress-title" id="appUpdateProgressTitle">جاري تنزيل التحديث الجديد</h3>
+        <p class="update-progress-text" id="appUpdateProgressText">يرجى الانتظار قليلًا وعدم إغلاق التطبيق أثناء التثبيت.</p>
+    </div>
+</div>
+
+<div class="transfer-modal-backdrop" id="historyEditModal" onclick="handleHistoryEditBackdrop(event)">
+    <div class="transfer-modal" role="dialog" aria-modal="true" aria-labelledby="historyEditTitle">
+        <div class="transfer-modal-header">
+            <div class="transfer-modal-title" id="historyEditTitle">تعديل الحركة</div>
+            <button type="button" class="transfer-close-btn" onclick="closeHistoryEditModal()" aria-label="إغلاق">×</button>
+        </div>
+        <div class="edit-history-form">
+            <input type="hidden" id="editHistoryId">
+            <div class="edit-history-field">
+                <label for="editHistoryPhone">رقم الهاتف</label>
+                <input type="tel" id="editHistoryPhone" placeholder="05XXXXXXXX" maxlength="32" autocomplete="tel" oninput="handlePhoneInput(this)" onpaste="handlePhonePaste(event, this)">
+                <div id="editHistoryPhoneError" class="error-message">يجب أن يبدأ الرقم بـ 059 أو 056 (10 أرقام)</div>
+            </div>
+            <div class="edit-history-field">
+                <label for="editHistoryAmount">المبلغ</label>
+                <input type="number" id="editHistoryAmount" placeholder="مثال: 10">
+                <div id="editHistoryAmountError" class="error-message">يجب أن يكون المبلغ بين 1 شيكل و 999 شيكل</div>
+            </div>
+            <div class="edit-history-field">
+                <label for="editHistoryTimestamp">التوقيت</label>
+                <input type="datetime-local" id="editHistoryTimestamp">
+                <div id="editHistoryTimestampError" class="error-message">الرجاء إدخال توقيت صحيح</div>
+            </div>
+            <div class="edit-history-field">
+                <label for="editHistoryNotes">الملاحظات</label>
+                <textarea id="editHistoryNotes" placeholder="تظهر في سجل الحركات"></textarea>
+            </div>
+            <div class="edit-history-actions">
+                <button type="button" class="edit-history-save-btn" onclick="saveHistoryEdit()">حفظ</button>
+                <button type="button" class="transfer-secondary-btn" onclick="closeHistoryEditModal()">إلغاء</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="transfer-modal-backdrop" id="historyTransferModal" onclick="handleHistoryTransferBackdrop(event)">
+    <div class="transfer-modal" role="dialog" aria-modal="true" aria-labelledby="historyTransferTitle">
+        <div class="transfer-modal-header">
+            <div class="transfer-modal-title" id="historyTransferTitle">استيراد وتصدير الحركات</div>
+            <button type="button" class="transfer-close-btn" onclick="closeHistoryTransferModal()" aria-label="إغلاق">×</button>
+        </div>
+        <div id="historyTransferChoicePanel">
+            <p class="transfer-help">اختر العملية المطلوبة للحركات المحفوظة.</p>
+            <div class="transfer-choice-grid">
+                <button type="button" class="transfer-action-btn export" onclick="exportHistoryToClipboard()">تصدير</button>
+                <button type="button" class="transfer-action-btn import" onclick="showHistoryImportPanel()">استيراد</button>
+            </div>
+        </div>
+        <div id="historyTransferImportPanel" style="display:none;">
+            <p class="transfer-help">الصق نص التصدير أو اختر ملف النسخة الاحتياطية لاستعادة الحركات.</p>
+            <textarea class="transfer-import-textarea" id="historyImportText" placeholder="الصق محتوى الحركات هنا"></textarea>
+            <input type="file" id="historyImportFile" accept=".backup,.txt,.json,text/plain,application/json" onchange="importHistoryFromFile(event)" style="display:none;">
+            <button type="button" class="transfer-paste-btn" onclick="pasteHistoryImportText()">لصق من الحافظة</button>
+            <button type="button" class="transfer-file-btn" onclick="openHistoryImportFilePicker()">استيراد ملف</button>
+            <div class="transfer-import-actions">
+                <button type="button" class="transfer-import-btn" onclick="importHistoryFromText()">استيراد</button>
+                <button type="button" class="transfer-secondary-btn" onclick="showHistoryTransferChoices()">رجوع</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- أكواد PWA والتثبيت والعمل بدون إنترنت ---
+
+    /*
+        مهم:
+        لا يتم إجبار التطبيق على البحث عن تحديث عند كل تشغيل.
+        إذا أردت إصدار تحديث جديد:
+        1) افتح ملف sw.js
+        2) غيّر قيمة APP_VERSION فقط
+        3) ارفع الملفات على السيرفر
+        عندها سيبدأ المتصفح بتثبيت النسخة الجديدة حسب آلية Service Worker الطبيعية.
+    */
+
+    let appServiceWorkerRegistration = null;
+    let isManualUpdateCheckRunning = false;
+    let pendingAppUpdateChoiceResolver = null;
+    let latestAppUpdateDate = '';
+    let latestAppUpdateNotes = [];
+
+    async function getCurrentCachedAppVersion() {
+        if (!('caches' in window)) return '';
+
+        const cacheNames = await caches.keys();
+        const appCache = cacheNames
+            .filter(cacheName => cacheName.startsWith('ussd-app-cache-'))
+            .sort()
+            .pop();
+
+        return appCache ? appCache.replace('ussd-app-cache-', '') : '';
+    }
+
+    function extractAppUpdateMetadataFromServiceWorker(sourceText) {
+        const source = String(sourceText || '');
+        const versionMatch = source.match(/APP_VERSION\s*=\s*['"]([^'"]+)['"]/);
+        const dateMatch = source.match(/APP_UPDATE_DATE\s*=\s*['"]([^'"]*)['"]/);
+        const notesMatch = source.match(/APP_UPDATE_NOTES\s*=\s*(\[[\s\S]*?\]);/);
+        let notes = [];
+
+        if (notesMatch) {
+            try {
+                notes = Function('"use strict"; return (' + notesMatch[1] + ');')();
+            } catch (error) {
+                notes = [];
+            }
+        }
+
+        return {
+            version: versionMatch ? versionMatch[1] : '',
+            date: dateMatch ? dateMatch[1] : '',
+            notes: Array.isArray(notes) ? notes : []
+        };
+    }
+
+    async function fetchLatestAppVersionFromServer() {
+        const response = await fetch('./sw.js?manual-update-check=' + Date.now(), {
+            cache: 'no-store'
+        });
+
+        if (!response.ok) {
+            throw new Error('sw_fetch_failed');
+        }
+
+        return extractAppUpdateMetadataFromServiceWorker(await response.text());
+    }
+
+    function renderAppUpdateNotes() {
+        const notesList = document.getElementById('appUpdateNotesList');
+        const dateText = document.getElementById('appUpdateDateText');
+        if (!notesList) return;
+
+        if (dateText) {
+            dateText.textContent = latestAppUpdateDate ? `تاريخ التحديث: ${latestAppUpdateDate}` : '';
+            dateText.style.display = latestAppUpdateDate ? 'block' : 'none';
+        }
+
+        notesList.innerHTML = latestAppUpdateNotes.length
+            ? latestAppUpdateNotes.map(note => `<li>${escapeHtml(note)}</li>`).join('')
+            : '<li>يتوفر تحديث جديد للتطبيق.</li>';
+    }
+
+    function askForAppUpdateConfirmation() {
+        renderAppUpdateNotes();
+        const modal = document.getElementById('appUpdateModal');
+        if (modal) modal.style.display = 'flex';
+
+        return new Promise(resolve => {
+            pendingAppUpdateChoiceResolver = resolve;
+        });
+    }
+
+    function resolveAppUpdateChoice(shouldUpdate) {
+        const modal = document.getElementById('appUpdateModal');
+        if (modal) modal.style.display = 'none';
+
+        if (pendingAppUpdateChoiceResolver) {
+            pendingAppUpdateChoiceResolver(shouldUpdate);
+            pendingAppUpdateChoiceResolver = null;
+        }
+    }
+
+    function handleAppUpdateModalBackdrop(event) {
+        if (event.target && event.target.id === 'appUpdateModal') {
+            resolveAppUpdateChoice(false);
+        }
+    }
+
+    function setAppUpdateProgress({ title, text, isSuccess = false }) {
+        const modal = document.getElementById('appUpdateProgressModal');
+        const box = document.getElementById('appUpdateProgressBox');
+        const titleElement = document.getElementById('appUpdateProgressTitle');
+        const textElement = document.getElementById('appUpdateProgressText');
+
+        if (titleElement) titleElement.textContent = title;
+        if (textElement) textElement.textContent = text;
+        if (box) box.classList.toggle('success', isSuccess);
+        if (modal) modal.style.display = 'flex';
+    }
+
+    function showAppUpdateDownloading() {
+        setAppUpdateProgress({
+            title: 'جاري تنزيل التحديث الجديد',
+            text: 'يرجى الانتظار قليلًا وعدم إغلاق التطبيق أثناء التثبيت.'
+        });
+    }
+
+    function waitForAppUpdateProgressPaint() {
+        return new Promise(resolve => {
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    setTimeout(resolve, 250);
+                });
+            });
+        });
+    }
+
+    function showAppUpdateSuccess() {
+        setAppUpdateProgress({
+            title: 'تم التحديث بنجاح',
+            text: 'سيتم إعادة تشغيل التطبيق الآن لتطبيق النسخة الجديدة.',
+            isSuccess: true
+        });
+    }
+
+    function hideAppUpdateProgress() {
+        const modal = document.getElementById('appUpdateProgressModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    const manualUpdateCacheUrls = [
+        './',
+        './index.html',
+        './manifest.json',
+        './icon-192.png',
+        './icon-512.png',
+        './Jawwalpay.png',
+        './palpay.png',
+        './pal.png',
+        './Tajawal-Regular.ttf'
+    ];
+
+    async function fetchFreshAppFile(url) {
+        const separator = url.includes('?') ? '&' : '?';
+        const response = await fetch(url + separator + 'manual-app-update=' + Date.now(), {
+            cache: 'no-store'
+        });
+
+        if (!response.ok || response.status !== 200) {
+            throw new Error('app_file_fetch_failed');
+        }
+
+        return response;
+    }
+
+    async function downloadAppFilesToCache(latestVersion) {
+        if (!('caches' in window)) {
+            throw new Error('cache_unavailable');
+        }
+
+        const newCacheName = 'ussd-app-cache-' + latestVersion;
+        const cache = await caches.open(newCacheName);
+
+        for (const url of manualUpdateCacheUrls) {
+            const response = await fetchFreshAppFile(url);
+            await cache.put(url, response.clone());
+        }
+
+        const cacheNames = await caches.keys();
+        await Promise.all(
+            cacheNames
+                .filter(cacheName => cacheName.startsWith('ussd-app-cache-') && cacheName !== newCacheName)
+                .map(cacheName => caches.delete(cacheName))
+        );
+    }
+
+    function waitForServiceWorkerInstalled(worker) {
+        return new Promise((resolve, reject) => {
+            if (!worker) {
+                reject(new Error('no_worker'));
+                return;
+            }
+
+            if (worker.state === 'installed' || worker.state === 'activated') {
+                resolve(worker);
+                return;
+            }
+
+            worker.addEventListener('statechange', () => {
+                if (worker.state === 'installed') {
+                    resolve(worker);
+                } else if (worker.state === 'redundant') {
+                    reject(new Error('update_install_failed'));
+                }
+            });
+        });
+    }
+
+    function waitForRegistrationUpdate(registration) {
+        return new Promise(resolve => {
+            const currentWorker = registration.waiting || registration.installing;
+            if (currentWorker) {
+                resolve(currentWorker);
+                return;
+            }
+
+            let isDone = false;
+            const finish = worker => {
+                if (isDone) return;
+                isDone = true;
+                clearTimeout(timer);
+                resolve(worker || registration.waiting || registration.installing || null);
+            };
+
+            const timer = setTimeout(() => finish(null), 10000);
+            registration.addEventListener('updatefound', () => finish(registration.installing), { once: true });
+        });
+    }
+
+    async function installConfirmedAppUpdate(registration, latestVersion) {
+        await downloadAppFilesToCache(latestVersion);
+
+        try {
+            const updateWorkerPromise = waitForRegistrationUpdate(registration);
+            const updatedRegistration = await registration.update();
+            const worker = updatedRegistration.waiting || updatedRegistration.installing || await updateWorkerPromise;
+
+            if (worker) {
+                const installedWorker = worker.state === 'installed' || worker.state === 'activated'
+                    ? worker
+                    : await waitForServiceWorkerInstalled(worker);
+
+                if (installedWorker && installedWorker.state !== 'activated') {
+                    showAppUpdateSuccess();
+                    installedWorker.postMessage({ type: 'SKIP_WAITING' });
+                    return;
+                }
+            }
+        } catch (error) {
+            console.log('Service Worker update finished through manual cache refresh:', error);
+        }
+
+        showAppUpdateSuccess();
+        setTimeout(() => window.location.reload(), 900);
+    }
+
+    async function checkForAppUpdate() {
+        const updateBtn = document.getElementById('historyUpdateBtn');
+
+        if (!('serviceWorker' in navigator)) {
+            showToast('التحديث غير مدعوم في هذا المتصفح');
+            return;
+        }
+
+        if (!navigator.onLine) {
+            showToast('لا يوجد اتصال بالإنترنت لفحص التحديث');
+            return;
+        }
+
+        if (isManualUpdateCheckRunning) return;
+
+        isManualUpdateCheckRunning = true;
+        if (updateBtn) {
+            updateBtn.disabled = true;
+            updateBtn.textContent = 'جار الفحص...';
+        }
+
+        try {
+            const registration = appServiceWorkerRegistration || await navigator.serviceWorker.getRegistration('./');
+            if (!registration) {
+                showToast('لم يتم تجهيز خدمة التحديث بعد، افتح التطبيق مرة أخرى');
+                return;
+            }
+
+            const currentVersion = await getCurrentCachedAppVersion();
+            const latestUpdateInfo = await fetchLatestAppVersionFromServer();
+            const latestVersion = latestUpdateInfo.version;
+
+            if (!latestVersion) {
+                showToast('تعذر قراءة رقم إصدار التحديث');
+                return;
+            }
+
+            if (currentVersion && latestVersion === currentVersion) {
+                showToast('لا يوجد تحديث جديد');
+                return;
+            }
+
+            latestAppUpdateDate = latestUpdateInfo.date || '';
+            latestAppUpdateNotes = latestUpdateInfo.notes || [];
+            const shouldUpdate = await askForAppUpdateConfirmation();
+
+            if (!shouldUpdate) return;
+
+            if (updateBtn) updateBtn.textContent = 'جار التنزيل...';
+            showAppUpdateDownloading();
+            await waitForAppUpdateProgressPaint();
+            await installConfirmedAppUpdate(registration, latestVersion);
+        } catch (error) {
+            hideAppUpdateProgress();
+            if (error && error.message === 'update_install_failed') {
+                showToast('فشل تنزيل ملفات التحديث، جرّب لاحقًا على اتصال أقوى');
+            } else if (error && error.message === 'app_file_fetch_failed') {
+                showToast('فشل تنزيل أحد ملفات التحديث، جرّب لاحقًا على الوايفاي');
+            } else if (error && error.message === 'cache_unavailable') {
+                showToast('التخزين المحلي للتحديث غير متاح في هذا المتصفح');
+            } else {
+                showToast('تعذر فحص أو تنزيل التحديث، حاول لاحقًا');
+            }
+        } finally {
+            isManualUpdateCheckRunning = false;
+            if (updateBtn) {
+                updateBtn.disabled = false;
+                updateBtn.textContent = 'تحديث';
+            }
+        }
+    }
+
+    if ('serviceWorker' in navigator) {
+        let isReloadingForUpdate = false;
+
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (isReloadingForUpdate) return;
+            isReloadingForUpdate = true;
+            window.location.reload();
+        });
+
+        navigator.serviceWorker.addEventListener('message', event => {
+            if (!event.data || event.data.type !== 'APP_UPDATED') return;
+            if (isReloadingForUpdate) return;
+            isReloadingForUpdate = true;
+            showAppUpdateSuccess();
+            setTimeout(() => window.location.reload(), 900);
+        });
+
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.getRegistration('./')
+                .then(existingRegistration => existingRegistration || navigator.serviceWorker.register('./sw.js'))
+                .then(registration => {
+                    appServiceWorkerRegistration = registration;
+                    console.log('Service Worker registered. Updates are controlled by APP_VERSION in sw.js.');
+
+                    registration.addEventListener('updatefound', () => {
+                        const newWorker = registration.installing;
+                        if (!newWorker) return;
+
+                        newWorker.addEventListener('statechange', () => {
+                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                console.log('New app version installed from sw.js version change.');
+                            }
+                        });
+                    });
+                })
+                .catch(err => {
+                    console.log('Service Worker registration failed: ', err);
+                });
+        });
+    }
+
+    // 2. معالجة فتح الرابط من داخل متصفح فيسبوك الداخلي
+    const externalBrowserCard = document.getElementById('externalBrowserCard');
+    const openInChromeBtn = document.getElementById('openInChromeBtn');
+
+    function isFacebookInAppBrowser() {
+        const ua = navigator.userAgent || '';
+        return /FBAN|FBAV|FBIOS|FB_IAB|FB4A|FBSS|MessengerForiOS|Instagram/i.test(ua);
+    }
+
+    function isAndroidDevice() {
+        return /Android/i.test(navigator.userAgent || '');
+    }
+
+    function getCleanCurrentUrl() {
+        const url = new URL(window.location.href);
+        url.hash = '';
+        url.searchParams.delete('fbclid');
+        url.searchParams.delete('mibextid');
+        return url.toString();
+    }
+
+    function buildChromeIntentUrl(targetUrl) {
+        const parsedUrl = new URL(targetUrl);
+        const hostAndPath = parsedUrl.host + parsedUrl.pathname + parsedUrl.search;
+        return `intent://${hostAndPath}#Intent;scheme=${parsedUrl.protocol.replace(':', '')};package=com.android.chrome;end`;
+    }
+
+    function openCurrentPageInChrome() {
+        const targetUrl = getCleanCurrentUrl();
+
+        if (isAndroidDevice()) {
+            window.location.href = buildChromeIntentUrl(targetUrl);
+            return;
+        }
+
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    if (externalBrowserCard && openInChromeBtn && isFacebookInAppBrowser() && !window.matchMedia('(display-mode: standalone)').matches) {
+        externalBrowserCard.style.display = 'block';
+        openInChromeBtn.addEventListener('click', openCurrentPageInChrome);
+    }
+
+    // 3. منطق زر التثبيت
+    let deferredPrompt;
+    const installCard = document.getElementById('installCard');
+    const installAppBtn = document.getElementById('installAppBtn');
+
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+
+        if (!isStandalone && !isFacebookInAppBrowser()) {
+            installCard.style.display = 'block';
+        }
+    });
+
+    installAppBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                console.log('User accepted the install prompt');
+                installCard.style.display = 'none';
+            }
+            deferredPrompt = null;
+        }
+    });
+
+    window.addEventListener('appinstalled', () => {
+        installCard.style.display = 'none';
+        deferredPrompt = null;
+    });
+
+
+    // --- أكواد الموقع الأصلية ---
+    let selectedWallet = '';
+    let showAllHistory = false;
+    let activeHistoryDate = '';
+    let activeHistoryMonth = '';
+    let activeHistoryStartDate = '';
+    let activeHistoryEndDate = '';
+    let activeHistoryFilterWallet = 'all';
+    let historySearchQuery = '';
+    let activeHistoryReportWallet = 'all';
+    let editingHistoryItemId = '';
+    const historyKey = 'ussd_history_v21'; 
+
+    window.onload = loadHistory;
+
+    function showToast(message, duration = 1400) {
+        const toast = document.getElementById('toast');
+        if (!toast) return;
+
+        toast.textContent = message;
+        toast.style.display = 'block';
+        clearTimeout(showToast.timer);
+        showToast.timer = setTimeout(() => {
+            toast.style.display = 'none';
+        }, duration);
+    }
+
+    function selectWallet(wallet) {
+        selectedWallet = wallet;
+        setFormAvailability(true);
+        document.getElementById('btnJawwal').classList.remove('active');
+        document.getElementById('btnPalpay').classList.remove('active');
+        document.getElementById('btnBop').classList.remove('active');
+        
+        if(wallet === 'jawwal') {
+            document.getElementById('btnJawwal').classList.add('active');
+            document.getElementById('generateBtn').style.background = 'var(--jawwal-green)';
+        } else if (wallet === 'palpay') {
+            document.getElementById('btnPalpay').classList.add('active');
+            document.getElementById('generateBtn').style.background = 'var(--palpay-purple)';
+        }
+        document.getElementById('phone').focus();
+    }
+
+    function resetForm(clearWallet = true) {
+        document.getElementById('phone').value = '';
+        document.getElementById('amount').value = '';
+        document.getElementById('notes').value = '';
+        document.getElementById('phoneError').style.display = 'none';
+        document.getElementById('amountError').style.display = 'none';
+
+        if (clearWallet) {
+            selectedWallet = '';
+            document.getElementById('btnJawwal').classList.remove('active');
+            document.getElementById('btnPalpay').classList.remove('active');
+            document.getElementById('btnBop').classList.remove('active');
+            document.getElementById('generateBtn').style.background = 'linear-gradient(135deg, #0ea5e9, #2563eb)';
+        }
+    }
+
+    function setFormAvailability(isAvailable) {
+        document.getElementById('phone').disabled = !isAvailable;
+        document.getElementById('amount').disabled = !isAvailable;
+        document.getElementById('notes').disabled = !isAvailable;
+        document.getElementById('generateBtn').disabled = !isAvailable;
+    }
+
+    function getNormalizedPhoneDigits(value) {
+        const normalizedDigitsText = String(value || '')
+            .replace(/[\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069]/g, '')
+            .replace(/[٠-٩]/g, digit => String(digit.charCodeAt(0) - 1632))
+            .replace(/[۰-۹]/g, digit => String(digit.charCodeAt(0) - 1776));
+
+        return {
+            text: normalizedDigitsText,
+            digits: normalizedDigitsText.replace(/\D/g, '')
+        };
+    }
+
+    function normalizePhoneNumber(value, forceLastNine = false) {
+        const { digits } = getNormalizedPhoneDigits(value);
+        if (!digits) return '';
+
+        if (forceLastNine || digits.length > 10) {
+            const lastNine = digits.slice(-9);
+            return lastNine ? ('0' + lastNine).slice(0, 10) : '';
+        }
+
+        if (digits.length === 10 && digits.startsWith('0')) return digits;
+        if (digits.length === 10) return '0' + digits.slice(-9);
+        if (digits.length === 9 && digits.startsWith('5')) return '0' + digits;
+
+        return digits.slice(0, 10);
+    }
+
+    function keepPhoneInputDirection(input) {
+        if (!input) return;
+        input.dir = 'ltr';
+        input.style.textAlign = 'center';
+    }
+
+    function handlePhoneInput(input) {
+        if (!input) return;
+        keepPhoneInputDirection(input);
+        const rawValue = input.value || '';
+        const { text, digits } = getNormalizedPhoneDigits(rawValue);
+        const shouldUseLastNine = digits.length >= 9 && (/\D/.test(text) || rawValue !== text || digits.length > 10 || !digits.startsWith('0'));
+        const normalizedValue = normalizePhoneNumber(rawValue, shouldUseLastNine);
+        if (input.value !== normalizedValue) input.value = normalizedValue;
+    }
+
+    function handlePhonePaste(event, input) {
+        if (!input) return;
+        event.preventDefault();
+        keepPhoneInputDirection(input);
+        const pastedText = event.clipboardData ? event.clipboardData.getData('text/plain') : '';
+        input.value = normalizePhoneNumber(pastedText, true);
+    }
+
+    function openWalletRequiredModal() {
+        const modal = document.getElementById('walletRequiredModal');
+        if (modal) modal.style.display = 'flex';
+    }
+
+    function closeWalletRequiredModal() {
+        const modal = document.getElementById('walletRequiredModal');
+        if (modal) modal.style.display = 'none';
+        const jawwalButton = document.getElementById('btnJawwal');
+        if (jawwalButton) jawwalButton.focus();
+    }
+
+    function handleWalletRequiredBackdrop(event) {
+        if (event.target && event.target.id === 'walletRequiredModal') {
+            closeWalletRequiredModal();
+        }
+    }
+
+    function openBankOfPalestine() {
+        resetForm(false);
+        selectedWallet = 'bop';
+        document.getElementById('btnJawwal').classList.remove('active');
+        document.getElementById('btnPalpay').classList.remove('active');
+        document.getElementById('btnBop').classList.add('active');
+        document.getElementById('generateBtn').style.background = 'var(--bop-magenta)';
+        setFormAvailability(false);
+
+        // Bank of Palestine USSD code: *267#
+        const bankCode = '*267#';
+        setTimeout(() => {
+            window.location.href = 'tel:' + bankCode.replace('#', '%23');
+        }, 120);
+    }
+
+    function process() {
+        const phoneInput = document.getElementById('phone');
+        const amountInput = document.getElementById('amount');
+        phoneInput.value = normalizePhoneNumber(phoneInput.value, true);
+        const phone = phoneInput.value.trim();
+        const amount = parseFloat(amountInput.value);
+        const notes = document.getElementById('notes').value.trim();
+        
+        const phoneError = document.getElementById('phoneError');
+        const amountError = document.getElementById('amountError');
+
+        phoneError.style.display = 'none';
+        amountError.style.display = 'none';
+
+        let hasError = false;
+
+        if (!selectedWallet) {
+            openWalletRequiredModal();
+            return;
+        }
+
+        if (selectedWallet === 'bop') {
+            return;
+        }
+
+        const isValidStart = phone.startsWith('059') || phone.startsWith('056');
+        const isValidLength = phone.length === 10;
+
+        if (!isValidStart || !isValidLength) {
+            phoneError.style.display = 'block';
+            hasError = true;
+        }
+
+        if (isNaN(amount) || amount < 1 || amount > 999) {
+            amountError.style.display = 'block';
+            hasError = true;
+        }
+
+        if (hasError) return;
+
+        let ussd = selectedWallet === 'jawwal' 
+            ? `*268*1*${phone}*${amount}#` 
+            : `*370*1*1*${phone}*${amount}#`;
+
+        const now = new Date();
+        
+        const hours = now.getHours().toString().padStart(2, '0');
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        const seconds = now.getSeconds().toString().padStart(2, '0');
+        const timeStr = `${hours}:${minutes}:${seconds}`;
+
+        const year = now.getFullYear();
+        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        const day = now.getDate().toString().padStart(2, '0');
+        const dateStr = `${year}/${month}/${day}`;
+        const dateISO = `${year}-${month}-${day}`;
+
+        const fullTimestamp = `${dateStr} | ${timeStr}`;
+
+        addToHistory(phone, amount, selectedWallet, fullTimestamp, notes, dateISO);
+        copyAndCall(ussd);
+    }
+
+    function copyAndCall(code) {
+        const el = document.createElement('textarea');
+        el.value = code;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+
+        showToast('تم نسخ الكود بنجاح', 800);
+        
+        setTimeout(() => {
+            window.location.href = 'tel:' + code.replace('#', '%23');
+            resetForm(true);
+            setFormAvailability(true);
+        }, 800);
+    }
+
+    function addToHistory(phone, amount, wallet, timestamp, notes = '', dateISO = '') {
+        let history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        history.unshift({
+            id: Date.now().toString(36) + Math.random().toString(36).slice(2),
+            phone,
+            amount,
+            wallet,
+            timestamp,
+            notes,
+            dateISO: dateISO || getDateFromHistoryItem({ timestamp })
+        });
+
+        // Keep all movements without a fixed application limit.
+        // Note: storage is still naturally limited by the browser's localStorage capacity.
+        localStorage.setItem(historyKey, JSON.stringify(history));
+        loadHistory();
+    }
+
+    function loadHistory() {
+        const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        const container = document.getElementById('historySection');
+        const list = document.getElementById('historyList');
+        const moreBtn = document.getElementById('moreBtn');
+        const filterStatus = document.getElementById('historyFilterStatus');
+        const emptyMessage = document.getElementById('historyEmptyMessage');
+        const clearFilterBtn = document.getElementById('historyClearFilterBtn');
+        const reportBtn = document.getElementById('historyReportBtn');
+        const clearAllBtn = document.getElementById('historyClearAllBtn');
+        const dateInput = document.getElementById('historyDateFilter');
+        const monthInput = document.getElementById('historyMonthFilter');
+        const searchInput = document.getElementById('historySearchInput');
+        const searchBox = document.getElementById('historySearchBox');
+        
+        container.style.display = 'block';
+        list.innerHTML = '';
+
+        if (history.length === 0) {
+            hideHistorySummaryCard();
+            closeHistoryFilterPanel();
+            filterStatus.style.display = 'none';
+            filterStatus.textContent = '';
+            emptyMessage.style.display = 'block';
+            emptyMessage.textContent = 'لا توجد حركات محفوظة';
+            moreBtn.style.display = 'none';
+            if (searchBox) searchBox.style.display = 'none';
+            if (reportBtn) reportBtn.style.display = 'none';
+            if (clearAllBtn) clearAllBtn.style.display = 'none';
+            if (clearFilterBtn) clearFilterBtn.style.display = 'none';
+            return;
+        }
+
+        if (searchBox) searchBox.style.display = 'block';
+
+        const hasActiveHistoryDateFilter = !!activeHistoryDate;
+        const hasActiveHistoryMonthFilter = !!activeHistoryMonth;
+        const hasActiveHistoryRangeFilter = !!activeHistoryStartDate && !!activeHistoryEndDate;
+        const hasActiveHistoryPeriodFilter = hasActiveHistoryDateFilter || hasActiveHistoryMonthFilter || hasActiveHistoryRangeFilter;
+        const walletFilteredHistory = activeHistoryFilterWallet === 'all'
+            ? history
+            : history.filter(item => item.wallet === activeHistoryFilterWallet);
+        const periodFilteredHistory = hasActiveHistoryDateFilter
+            ? walletFilteredHistory.filter(item => getDateFromHistoryItem(item) === activeHistoryDate)
+            : hasActiveHistoryMonthFilter
+                ? walletFilteredHistory.filter(item => getDateFromHistoryItem(item).startsWith(activeHistoryMonth))
+                : hasActiveHistoryRangeFilter
+                    ? walletFilteredHistory.filter(item => isHistoryItemDateInRange(item, activeHistoryStartDate, activeHistoryEndDate))
+                    : history;
+        const normalizedSearch = historySearchQuery.trim().toLowerCase();
+        const summaryCard = document.getElementById('historySummaryCard');
+        const hasVisibleHistorySummary = !!(summaryCard && summaryCard.style.display !== 'none' && summaryCard.innerHTML.trim());
+        const filteredHistory = normalizedSearch
+            ? periodFilteredHistory.filter(item => {
+                const phone = String(item.phone || '').toLowerCase();
+                const notes = String(item.notes || '').toLowerCase();
+                return phone.includes(normalizedSearch) || notes.includes(normalizedSearch);
+            })
+            : periodFilteredHistory;
+
+        if (dateInput) dateInput.value = activeHistoryDate;
+        if (monthInput) monthInput.value = activeHistoryMonth;
+        if (searchInput && searchInput.value !== historySearchQuery) searchInput.value = historySearchQuery;
+
+        if (hasActiveHistoryPeriodFilter || normalizedSearch) {
+            const periodLabel = hasActiveHistoryDateFilter
+                ? '\u064a\u0648\u0645 ' + formatDateForDisplay(activeHistoryDate)
+                : hasActiveHistoryMonthFilter
+                    ? '\u0634\u0647\u0631 ' + formatMonthForDisplay(activeHistoryMonth)
+                    : hasActiveHistoryRangeFilter
+                        ? '\u0645\u0646 ' + formatDateForDisplay(activeHistoryStartDate) + ' \u0625\u0644\u0649 ' + formatDateForDisplay(activeHistoryEndDate)
+                        : '';
+            const walletLabel = activeHistoryFilterWallet === 'all'
+                ? ''
+                : ' \u0641\u064a \u0645\u062d\u0641\u0638\u0629 ' + getHistoryFilterWalletLabel();
+            const searchLabel = normalizedSearch ? ' \u0648 \u0628\u062d\u062b "' + historySearchQuery + '"' : '';
+            if (hasVisibleHistorySummary && !normalizedSearch) {
+                filterStatus.style.display = 'none';
+                filterStatus.textContent = '';
+            } else {
+                filterStatus.style.display = 'block';
+                filterStatus.textContent = '\u064a\u062a\u0645 \u0639\u0631\u0636 ' + filteredHistory.length + ' \u062d\u0631\u0643\u0629 \u062d\u0633\u0628 ' + periodLabel + walletLabel + searchLabel;
+            }
+            if (clearFilterBtn) clearFilterBtn.style.display = hasActiveHistoryPeriodFilter ? 'inline-flex' : 'none';
+            if (reportBtn) reportBtn.style.display = hasActiveHistoryPeriodFilter ? 'none' : 'inline-flex';
+            if (clearAllBtn) clearAllBtn.style.display = hasActiveHistoryPeriodFilter ? 'none' : 'inline-flex';
+            if (hasActiveHistoryPeriodFilter) {
+                closeHistoryFilterPanel();
+            }
+        } else {
+            filterStatus.style.display = 'none';
+            filterStatus.textContent = '';
+            if (clearFilterBtn) clearFilterBtn.style.display = 'none';
+            if (reportBtn) reportBtn.style.display = 'inline-flex';
+            if (clearAllBtn) clearAllBtn.style.display = 'inline-flex';
+        }
+
+        if (filteredHistory.length === 0) {
+            emptyMessage.style.display = 'block';
+            emptyMessage.textContent = normalizedSearch ? '\u0644\u0627 \u062a\u0648\u062c\u062f \u0646\u062a\u0627\u0626\u062c \u0645\u0637\u0627\u0628\u0642\u0629 \u0644\u0644\u0628\u062d\u062b' : '\u0644\u0627 \u062a\u0648\u062c\u062f \u062d\u0631\u0643\u0627\u062a \u0645\u0637\u0627\u0628\u0642\u0629 \u0644\u0644\u0641\u0644\u062a\u0631\u0629';
+            moreBtn.style.display = 'none';
+            return;
+        }
+
+        emptyMessage.style.display = 'none';
+
+        filteredHistory.forEach((item, index) => {
+            const shouldHide = !hasActiveHistoryPeriodFilter && !normalizedSearch && !showAllHistory && index >= 5;
+            const div = document.createElement('div');
+            div.className = `history-item ${shouldHide ? 'hidden' : ''}`;
+            const itemId = getHistoryItemId(item, index);
+            const safePhone = escapeHtml(item.phone || '');
+            const safeAmount = escapeHtml(String(item.amount || ''));
+            const safeTimestamp = escapeHtml(item.timestamp || '');
+            const safeNotes = escapeHtml(item.notes || '');
+            const badgeColor = item.wallet === 'jawwal' ? 'var(--jawwal-green)' : 'var(--palpay-purple)';
+            const walletName = item.wallet === 'jawwal' ? 'جوال باي' : 'بال باي';
+            const noteHtml = safeNotes ? `<div class="history-note">ملاحظات: ${safeNotes}</div>` : '';
+
+            div.onclick = () => {
+                document.getElementById('phone').value = item.phone || '';
+                document.getElementById('amount').value = item.amount || '';
+                document.getElementById('notes').value = item.notes || '';
+                document.getElementById('phoneError').style.display = 'none';
+                document.getElementById('amountError').style.display = 'none';
+                selectWallet(item.wallet);
+            };
+
+            div.innerHTML = `
+                <div class="history-details">
+                    <div style="font-weight:bold; font-size:0.85rem;">${safePhone}</div>
+                    <div style="font-size:0.7rem; color:var(--text-sub)">${safeAmount} شيكل • ${safeTimestamp}</div>
+                    ${noteHtml}
+                </div>
+                <div class="history-actions">
+                    <span class="badge" style="background:${badgeColor}">${walletName}</span>
+                    <button class="edit-history-btn" onclick="openHistoryEditModal(event, '${itemId}')" title="تعديل هذه الحركة" aria-label="تعديل هذه الحركة">✎</button>
+                    <button class="delete-history-btn" onclick="deleteHistoryItem(event, '${itemId}')" title="حذف هذه الحركة">×</button>
+                </div>
+            `;
+            list.appendChild(div);
+        });
+
+        if (!hasActiveHistoryPeriodFilter && !normalizedSearch && filteredHistory.length > 5) {
+            moreBtn.style.display = 'block';
+            moreBtn.innerText = showAllHistory ? 'إخفاء الحركات الإضافية' : `عرض المزيد (${filteredHistory.length - 5} حركات)`;
+        } else {
+            moreBtn.style.display = 'none';
+        }
+    }
+
+    function setHistorySearchBoxVisible(isVisible) {
+        const searchBox = document.getElementById('historySearchBox');
+        if (searchBox) searchBox.style.display = isVisible ? 'block' : 'none';
+    }
+
+    function openHistoryFilterPanel() {
+        const filterPanel = document.getElementById('historyFilterPanel');
+        if (!filterPanel) return;
+
+        closeHistoryReportPanel();
+        filterPanel.style.display = 'block';
+        setHistorySearchBoxVisible(false);
+        setHistoryFilterWallet(activeHistoryFilterWallet);
+        hideHistorySummaryCard();
+    }
+
+    function closeHistoryFilterPanel() {
+        const filterPanel = document.getElementById('historyFilterPanel');
+        if (filterPanel) filterPanel.style.display = 'none';
+        if (!activeHistoryDate && !activeHistoryMonth) setHistorySearchBoxVisible(true);
+    }
+
+    function setHistoryFilterWallet(wallet) {
+        activeHistoryFilterWallet = ['jawwal', 'palpay'].includes(wallet) ? wallet : 'all';
+
+        const walletButtons = {
+            all: document.getElementById('historyFilterWalletAll'),
+            jawwal: document.getElementById('historyFilterWalletJawwal'),
+            palpay: document.getElementById('historyFilterWalletPalpay')
+        };
+
+        Object.keys(walletButtons).forEach(key => {
+            if (!walletButtons[key]) return;
+            walletButtons[key].classList.toggle('active', key === activeHistoryFilterWallet);
+        });
+    }
+
+    function getHistoryFilterWalletLabel() {
+        if (activeHistoryFilterWallet === 'jawwal') return '\u062c\u0648\u0627\u0644 \u0628\u0627\u064a';
+        if (activeHistoryFilterWallet === 'palpay') return '\u0628\u0627\u0644 \u0628\u0627\u064a';
+        return '\u0643\u0644 \u0627\u0644\u0645\u062d\u0627\u0641\u0638';
+    }
+
+    function openHistoryDatePicker() {
+        const dateInput = document.getElementById('historyDateFilter');
+        const monthInput = document.getElementById('historyMonthFilter');
+        if (!dateInput) return;
+
+        if (monthInput) monthInput.value = '';
+        activeHistoryMonth = '';
+        activeHistoryStartDate = '';
+        activeHistoryEndDate = '';
+        dateInput.value = '';
+
+        if (typeof dateInput.showPicker === 'function') {
+            dateInput.showPicker();
+        } else {
+            dateInput.focus();
+            dateInput.click();
+        }
+    }
+
+    function openHistoryMonthPicker() {
+        const monthInput = document.getElementById('historyMonthFilter');
+        const dateInput = document.getElementById('historyDateFilter');
+        if (!monthInput) return;
+
+        if (dateInput) dateInput.value = '';
+        activeHistoryDate = '';
+        activeHistoryStartDate = '';
+        activeHistoryEndDate = '';
+        monthInput.value = '';
+
+        if (typeof monthInput.showPicker === 'function') {
+            monthInput.showPicker();
+        } else {
+            monthInput.focus();
+            monthInput.click();
+        }
+    }
+
+    function applyHistorySearch(searchValue) {
+        historySearchQuery = searchValue || '';
+        showAllHistory = !!historySearchQuery.trim();
+        loadHistory();
+    }
+
+    function clearHistorySearchQuery() {
+        historySearchQuery = '';
+        const searchInput = document.getElementById('historySearchInput');
+        if (searchInput) searchInput.value = '';
+    }
+
+    function applyHistoryDateFilter(dateValue) {
+        activeHistoryDate = dateValue || '';
+        activeHistoryMonth = '';
+        activeHistoryStartDate = '';
+        activeHistoryEndDate = '';
+        showAllHistory = true;
+        loadHistory();
+    }
+
+    function applyHistoryMonthFilter(monthValue) {
+        activeHistoryMonth = monthValue || '';
+        activeHistoryDate = '';
+        activeHistoryStartDate = '';
+        activeHistoryEndDate = '';
+        showAllHistory = true;
+        loadHistory();
+    }
+
+    function clearHistoryDateFilter() {
+        activeHistoryDate = '';
+        activeHistoryMonth = '';
+        activeHistoryStartDate = '';
+        activeHistoryEndDate = '';
+        activeHistoryFilterWallet = 'all';
+        showAllHistory = false;
+        const dateInput = document.getElementById('historyDateFilter');
+        const monthInput = document.getElementById('historyMonthFilter');
+        const reportStartInput = document.getElementById('historyReportStartDate');
+        const reportEndInput = document.getElementById('historyReportEndDate');
+        if (dateInput) dateInput.value = '';
+        if (monthInput) monthInput.value = '';
+        if (reportStartInput) reportStartInput.value = '';
+        if (reportEndInput) reportEndInput.value = '';
+        setHistoryFilterWallet('all');
+        closeHistoryFilterPanel();
+        closeHistoryReportPanel(false);
+        loadHistory();
+    }
+
+    function openHistoryReportPanel() {
+        const reportModal = document.getElementById('historyReportModal');
+        const reportPanel = document.getElementById('historyReportPanel');
+        if (!reportModal || !reportPanel) return;
+
+        closeHistoryFilterPanel();
+        reportModal.style.display = 'flex';
+        reportPanel.style.display = 'block';
+        setHistorySearchBoxVisible(false);
+        setHistoryReportWallet(activeHistoryReportWallet);
+        syncHistoryReportRangeInputs();
+        hideHistorySummaryCard();
+    }
+
+    function closeHistoryReportPanel(resetReportFilter = true) {
+        const reportModal = document.getElementById('historyReportModal');
+        const reportPanel = document.getElementById('historyReportPanel');
+        const summaryDayInput = document.getElementById('historySummaryDayInput');
+        const summaryMonthInput = document.getElementById('historySummaryMonthInput');
+        const dateInput = document.getElementById('historyDateFilter');
+        const monthInput = document.getElementById('historyMonthFilter');
+        const reportStartInput = document.getElementById('historyReportStartDate');
+        const reportEndInput = document.getElementById('historyReportEndDate');
+
+        if (summaryDayInput) summaryDayInput.value = '';
+        if (summaryMonthInput) summaryMonthInput.value = '';
+        if (reportStartInput) reportStartInput.value = '';
+        if (reportEndInput) reportEndInput.value = '';
+
+        if (resetReportFilter) {
+            activeHistoryDate = '';
+            activeHistoryMonth = '';
+            activeHistoryStartDate = '';
+            activeHistoryEndDate = '';
+            activeHistoryFilterWallet = 'all';
+            showAllHistory = false;
+            if (dateInput) dateInput.value = '';
+            if (monthInput) monthInput.value = '';
+            setHistoryFilterWallet('all');
+        }
+
+        hideHistorySummaryCard();
+        if (reportModal) reportModal.style.display = 'none';
+        if (reportPanel) reportPanel.style.display = 'block';
+        if (!activeHistoryDate && !activeHistoryMonth && !activeHistoryStartDate && !activeHistoryEndDate) setHistorySearchBoxVisible(true);
+        if (resetReportFilter) loadHistory();
+    }
+
+    function hideHistoryReportModal() {
+        const reportModal = document.getElementById('historyReportModal');
+        if (reportModal) reportModal.style.display = 'none';
+    }
+
+    function handleHistoryReportBackdrop(event) {
+        if (event.target && event.target.id === 'historyReportModal') {
+            closeHistoryReportPanel();
+        }
+    }
+
+    function setHistoryReportWallet(wallet) {
+        activeHistoryReportWallet = ['jawwal', 'palpay'].includes(wallet) ? wallet : 'all';
+
+        const walletButtons = {
+            all: document.getElementById('historyReportWalletAll'),
+            jawwal: document.getElementById('historyReportWalletJawwal'),
+            palpay: document.getElementById('historyReportWalletPalpay')
+        };
+
+        Object.keys(walletButtons).forEach(key => {
+            if (!walletButtons[key]) return;
+            walletButtons[key].classList.toggle('active', key === activeHistoryReportWallet);
+        });
+
+        hideHistorySummaryCard();
+
+        if (activeHistoryDate || activeHistoryMonth) {
+            activeHistoryFilterWallet = activeHistoryReportWallet;
+            showAllHistory = true;
+            if (activeHistoryDate) {
+                showHistoryDaySummary(activeHistoryDate);
+            } else {
+                showHistoryMonthSummary(activeHistoryMonth);
+            }
+        }
+    }
+
+    function filterHistoryByReportWallet(items) {
+        if (activeHistoryReportWallet === 'all') return items;
+        return items.filter(item => item.wallet === activeHistoryReportWallet);
+    }
+
+    function getHistoryReportWalletLabel() {
+        if (activeHistoryReportWallet === 'jawwal') return '\u062c\u0648\u0627\u0644 \u0628\u0627\u064a';
+        if (activeHistoryReportWallet === 'palpay') return '\u0628\u0627\u0644 \u0628\u0627\u064a';
+        return '\u0643\u0644 \u0627\u0644\u0645\u062d\u0627\u0641\u0638';
+    }
+
+    function syncHistoryReportRangeInputs() {
+        const startInput = document.getElementById('historyReportStartDate');
+        const endInput = document.getElementById('historyReportEndDate');
+        if (startInput) startInput.value = activeHistoryStartDate;
+        if (endInput) endInput.value = activeHistoryEndDate;
+    }
+
+    function clearHistoryReportRange() {
+        activeHistoryStartDate = '';
+        activeHistoryEndDate = '';
+        activeHistoryDate = '';
+        activeHistoryMonth = '';
+        activeHistoryFilterWallet = 'all';
+        showAllHistory = false;
+        syncHistoryReportRangeInputs();
+        hideHistorySummaryCard();
+        loadHistory();
+    }
+
+    function showHistoryRangeSummary() {
+        const startInput = document.getElementById('historyReportStartDate');
+        const endInput = document.getElementById('historyReportEndDate');
+        const startDate = startInput ? startInput.value : activeHistoryStartDate;
+        const endDate = endInput ? endInput.value : activeHistoryEndDate;
+
+        if (!startDate || !endDate) {
+            showToast('\u0627\u062e\u062a\u0631 \u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0628\u062f\u0627\u064a\u0629 \u0648\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0646\u0647\u0627\u064a\u0629');
+            return;
+        }
+
+        if (startDate > endDate) {
+            showToast('\u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0628\u062f\u0627\u064a\u0629 \u064a\u062c\u0628 \u0623\u0646 \u064a\u0643\u0648\u0646 \u0642\u0628\u0644 \u062a\u0627\u0631\u064a\u062e \u0627\u0644\u0646\u0647\u0627\u064a\u0629');
+            return;
+        }
+
+        const reportPanel = document.getElementById('historyReportPanel');
+        if (reportPanel) reportPanel.style.display = 'block';
+
+        const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        const rangeMovements = filterHistoryByReportWallet(history.filter(item => isHistoryItemDateInRange(item, startDate, endDate)));
+        const totalCount = rangeMovements.length;
+        const totalAmount = calculateHistoryTotal(rangeMovements);
+        const walletLabel = activeHistoryReportWallet === 'all'
+            ? '\u0641\u064a \u0643\u0644 \u0627\u0644\u0645\u062d\u0627\u0641\u0638'
+            : '\u0641\u064a \u0645\u062d\u0641\u0638\u0629 ' + getHistoryReportWalletLabel();
+
+        activeHistoryStartDate = startDate;
+        activeHistoryEndDate = endDate;
+        activeHistoryDate = '';
+        activeHistoryMonth = '';
+        activeHistoryFilterWallet = activeHistoryReportWallet;
+        clearHistorySearchQuery();
+        showAllHistory = true;
+
+        const dateInput = document.getElementById('historyDateFilter');
+        const monthInput = document.getElementById('historyMonthFilter');
+        if (dateInput) dateInput.value = '';
+        if (monthInput) monthInput.value = '';
+        syncHistoryReportRangeInputs();
+
+        renderHistoryRangeSummaryCard({
+            title: '\u062a\u0642\u0631\u064a\u0631 \u0627\u0644\u062d\u0631\u0643\u0627\u062a \u0645\u0646 ' + formatDateForDisplay(startDate) + ' \u0625\u0644\u0649 ' + formatDateForDisplay(endDate) + ' ' + walletLabel,
+            count: totalCount,
+            total: totalAmount
+        });
+        hideHistoryReportModal();
+        loadHistory();
+    }
+
+    function renderHistoryRangeSummaryCard({ title, count, total }) {
+        const summaryCard = document.getElementById('historySummaryCard');
+        if (!summaryCard) return;
+
+        summaryCard.style.display = 'block';
+        summaryCard.innerHTML = `
+            <h3>${escapeHtml(title)}</h3>
+            <div class="history-summary-grid">
+                <div class="history-summary-box">
+                    <span class="history-summary-label">\u0639\u062f\u062f \u0627\u0644\u062d\u0631\u0643\u0627\u062a</span>
+                    <span class="history-summary-value">${escapeHtml(String(count))}</span>
+                </div>
+                <div class="history-summary-box">
+                    <span class="history-summary-label">\u0645\u062c\u0645\u0648\u0639 \u0642\u064a\u0645 \u0627\u0644\u062d\u0631\u0643\u0627\u062a</span>
+                    <span class="history-summary-value">${escapeHtml(formatAmountForDisplay(total))} \u0634\u064a\u0643\u0644</span>
+                </div>
+            </div>
+        `;
+    }
+    function openHistorySummaryDayPicker() {
+        const dateInput = document.getElementById('historySummaryDayInput');
+        const monthInput = document.getElementById('historySummaryMonthInput');
+        if (!dateInput) return;
+
+        if (monthInput) monthInput.value = '';
+        dateInput.value = '';
+
+        if (typeof dateInput.showPicker === 'function') {
+            dateInput.showPicker();
+        } else {
+            dateInput.focus();
+            dateInput.click();
+        }
+    }
+
+    function openHistorySummaryMonthPicker() {
+        const monthInput = document.getElementById('historySummaryMonthInput');
+        const dateInput = document.getElementById('historySummaryDayInput');
+        if (!monthInput) return;
+
+        if (dateInput) dateInput.value = '';
+        monthInput.value = '';
+
+        if (typeof monthInput.showPicker === 'function') {
+            monthInput.showPicker();
+        } else {
+            monthInput.focus();
+            monthInput.click();
+        }
+    }
+
+    function showHistoryDaySummary(dateValue) {
+        if (!dateValue) return;
+
+        const reportPanel = document.getElementById('historyReportPanel');
+        if (reportPanel) reportPanel.style.display = 'block';
+
+        const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        const dayMovements = filterHistoryByReportWallet(history.filter(item => getDateFromHistoryItem(item) === dateValue));
+        const totalAmount = calculateHistoryTotal(dayMovements);
+        const formattedDate = formatDateForDisplay(dateValue);
+        const walletLabel = getHistoryReportWalletLabel();
+
+        activeHistoryDate = dateValue;
+        activeHistoryMonth = '';
+        activeHistoryStartDate = '';
+        activeHistoryEndDate = '';
+        activeHistoryFilterWallet = activeHistoryReportWallet;
+        clearHistorySearchQuery();
+        showAllHistory = true;
+        const dateInput = document.getElementById('historyDateFilter');
+        const monthInput = document.getElementById('historyMonthFilter');
+        if (dateInput) dateInput.value = activeHistoryDate;
+        if (monthInput) monthInput.value = '';
+
+        renderHistorySummaryCard({
+            title: '\u0645\u062c\u0645\u0648\u0639 \u062d\u0631\u0643\u0627\u062a \u064a\u0648\u0645 ' + formattedDate + ' - ' + walletLabel,
+            count: dayMovements.length,
+            total: totalAmount
+        });
+        loadHistory();
+    }
+    function showHistoryMonthSummary(monthValue) {
+        if (!monthValue) return;
+
+        const reportPanel = document.getElementById('historyReportPanel');
+        if (reportPanel) reportPanel.style.display = 'block';
+
+        const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        const monthMovements = filterHistoryByReportWallet(history.filter(item => getDateFromHistoryItem(item).startsWith(monthValue)));
+        const totalAmount = calculateHistoryTotal(monthMovements);
+        const formattedMonth = formatMonthForDisplay(monthValue);
+        const walletLabel = getHistoryReportWalletLabel();
+
+        activeHistoryMonth = monthValue;
+        activeHistoryDate = '';
+        activeHistoryStartDate = '';
+        activeHistoryEndDate = '';
+        activeHistoryFilterWallet = activeHistoryReportWallet;
+        clearHistorySearchQuery();
+        showAllHistory = true;
+        const dateInput = document.getElementById('historyDateFilter');
+        const monthInput = document.getElementById('historyMonthFilter');
+        if (dateInput) dateInput.value = '';
+        if (monthInput) monthInput.value = activeHistoryMonth;
+
+        renderHistorySummaryCard({
+            title: '\u0645\u062c\u0645\u0648\u0639 \u062d\u0631\u0643\u0627\u062a \u0634\u0647\u0631 ' + formattedMonth + ' - ' + walletLabel,
+            count: monthMovements.length,
+            total: totalAmount
+        });
+        loadHistory();
+    }
+    function calculateHistoryTotal(items) {
+        return items.reduce((sum, item) => {
+            const numericAmount = parseFloat(item.amount);
+            return sum + (isNaN(numericAmount) ? 0 : numericAmount);
+        }, 0);
+    }
+
+    function renderHistorySummaryCard({ title, count, total }) {
+        const summaryCard = document.getElementById('historySummaryCard');
+        if (!summaryCard) return;
+
+        summaryCard.style.display = 'block';
+        summaryCard.innerHTML = `
+            <h3>${escapeHtml(title)}</h3>
+            <div class="history-summary-grid">
+                <div class="history-summary-box">
+                    <span class="history-summary-label">عدد الحركات</span>
+                    <span class="history-summary-value">${escapeHtml(String(count))}</span>
+                </div>
+                <div class="history-summary-box">
+                    <span class="history-summary-label">مجموع القيم</span>
+                    <span class="history-summary-value">${escapeHtml(formatAmountForDisplay(total))} شيكل</span>
+                </div>
+            </div>
+        `;
+    }
+
+    function hideHistorySummaryCard() {
+        const summaryCard = document.getElementById('historySummaryCard');
+        if (!summaryCard) return;
+
+        summaryCard.style.display = 'none';
+        summaryCard.innerHTML = '';
+    }
+
+    function getDateFromHistoryItem(item) {
+        if (item.dateISO) return item.dateISO;
+
+        const timestamp = item.timestamp || '';
+        const datePart = timestamp.split('|')[0].trim();
+        const match = datePart.match(/^(\d{4})[\/\-](\d{2})[\/\-](\d{2})$/);
+        if (!match) return '';
+
+        return `${match[1]}-${match[2]}-${match[3]}`;
+    }
+
+    function isHistoryItemDateInRange(item, startDate, endDate) {
+        const itemDate = getDateFromHistoryItem(item);
+        return !!itemDate && itemDate >= startDate && itemDate <= endDate;
+    }
+
+    function formatDateForDisplay(dateValue) {
+        const match = String(dateValue).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!match) return dateValue;
+        return `${match[1]}/${match[2]}/${match[3]}`;
+    }
+
+    function formatMonthForDisplay(monthValue) {
+        const match = String(monthValue).match(/^(\d{4})-(\d{2})$/);
+        if (!match) return monthValue;
+        return `${match[1]}/${match[2]}`;
+    }
+
+    function formatAmountForDisplay(amount) {
+        const numericAmount = Number(amount);
+        if (!Number.isFinite(numericAmount)) return '0';
+        return Number.isInteger(numericAmount) ? String(numericAmount) : numericAmount.toFixed(2).replace(/\.00$/, '');
+    }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function openHistoryTransferMenu() {
+        const modal = document.getElementById('historyTransferModal');
+        if (!modal) return;
+
+        showHistoryTransferChoices();
+        modal.style.display = 'flex';
+    }
+
+    function closeHistoryTransferModal() {
+        const modal = document.getElementById('historyTransferModal');
+        if (!modal) return;
+
+        modal.style.display = 'none';
+        const importText = document.getElementById('historyImportText');
+        if (importText) importText.value = '';
+    }
+
+    function handleHistoryTransferBackdrop(event) {
+        if (event.target && event.target.id === 'historyTransferModal') {
+            closeHistoryTransferModal();
+        }
+    }
+
+    function showHistoryTransferChoices() {
+        const choicePanel = document.getElementById('historyTransferChoicePanel');
+        const importPanel = document.getElementById('historyTransferImportPanel');
+        if (choicePanel) choicePanel.style.display = 'block';
+        if (importPanel) importPanel.style.display = 'none';
+    }
+
+    function showHistoryImportPanel() {
+        const choicePanel = document.getElementById('historyTransferChoicePanel');
+        const importPanel = document.getElementById('historyTransferImportPanel');
+        const importText = document.getElementById('historyImportText');
+
+        if (choicePanel) choicePanel.style.display = 'none';
+        if (importPanel) importPanel.style.display = 'block';
+        if (importText) importText.focus();
+    }
+
+    function encodeHistoryExportPayload(payload) {
+        const jsonText = JSON.stringify(payload);
+        const utf8Bytes = new TextEncoder().encode(jsonText);
+        let binaryText = '';
+        utf8Bytes.forEach(byte => { binaryText += String.fromCharCode(byte); });
+        return 'USSD-HISTORY:' + btoa(binaryText).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+    }
+
+    function decodeHistoryExportPayload(rawText) {
+        const text = String(rawText || '').trim();
+        if (!text.startsWith('USSD-HISTORY:')) return JSON.parse(text);
+
+        const encodedText = text.slice('USSD-HISTORY:'.length).replace(/-/g, '+').replace(/_/g, '/');
+        const paddedText = encodedText + '='.repeat((4 - encodedText.length % 4) % 4);
+        const binaryText = atob(paddedText);
+        const bytes = Uint8Array.from(binaryText, char => char.charCodeAt(0));
+        return JSON.parse(new TextDecoder().decode(bytes));
+    }
+
+    const HISTORY_CLIPBOARD_EXPORT_LIMIT = 120000;
+
+    function buildHistoryExportText() {
+        const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        return encodeHistoryExportPayload({
+            app: 'ussd-code-maker',
+            type: 'history-export',
+            version: 2,
+            exportedAt: new Date().toISOString(),
+            history
+        });
+    }
+
+    function buildHistoryExportFileName() {
+        const now = new Date();
+        const pad = value => String(value).padStart(2, '0');
+        return 'ussd-history-' + now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate()) + '-' + pad(now.getHours()) + pad(now.getMinutes()) + '.backup';
+    }
+
+    function downloadHistoryExportFile(exportText) {
+        const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = buildHistoryExportFileName();
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    async function copyTextToClipboard(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text);
+            return;
+        }
+
+        const el = document.createElement('textarea');
+        el.value = text;
+        el.setAttribute('readonly', '');
+        el.style.position = 'fixed';
+        el.style.top = '-1000px';
+        document.body.appendChild(el);
+        el.focus();
+        el.select();
+        const copied = document.execCommand('copy');
+        document.body.removeChild(el);
+
+        if (!copied) {
+            throw new Error('copy_failed');
+        }
+    }
+
+    async function exportHistoryToClipboard() {
+        const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        if (history.length === 0) {
+            showToast('لا توجد حركات لتصديرها');
+            return;
+        }
+
+        const exportText = buildHistoryExportText();
+        if (exportText.length > HISTORY_CLIPBOARD_EXPORT_LIMIT) {
+            downloadHistoryExportFile(exportText);
+            closeHistoryTransferModal();
+            showToast('حجم التصدير كبير، تم تنزيل ملف النسخة الاحتياطية');
+            return;
+        }
+
+        try {
+            await copyTextToClipboard(exportText);
+            closeHistoryTransferModal();
+            showToast('\u062a\u0645 \u0646\u0633\u062e ' + history.length + ' \u062d\u0631\u0643\u0629 \u0625\u0644\u0649 \u0627\u0644\u062d\u0627\u0641\u0638\u0629');
+        } catch (error) {
+            showHistoryImportPanel();
+            const importText = document.getElementById('historyImportText');
+            if (importText) {
+                importText.value = exportText;
+                importText.select();
+            }
+            showToast('تعذر النسخ التلقائي، انسخ النص يدويًا');
+        }
+    }
+
+    async function pasteHistoryImportText() {
+        const importText = document.getElementById('historyImportText');
+        if (!importText) return;
+
+        try {
+            if (!navigator.clipboard || !window.isSecureContext) {
+                throw new Error('clipboard_unavailable');
+            }
+            importText.value = await navigator.clipboard.readText();
+            importText.focus();
+        } catch (error) {
+            importText.focus();
+            showToast('الصق يدويًا إذا لم يسمح المتصفح باللصق');
+        }
+    }
+
+    function parseImportedHistory(rawText) {
+        const parsed = decodeHistoryExportPayload(rawText);
+        const history = Array.isArray(parsed) ? parsed : parsed.history;
+
+        if (!Array.isArray(history)) {
+            throw new Error('invalid_history');
+        }
+
+        return history.map((item, index) => {
+            if (!item || typeof item !== 'object') {
+                throw new Error('invalid_item');
+            }
+
+            return {
+                id: item.id || (Date.now().toString(36) + index),
+                phone: item.phone || '',
+                amount: item.amount || '',
+                wallet: item.wallet || '',
+                timestamp: item.timestamp || '',
+                notes: item.notes || '',
+                dateISO: item.dateISO || getDateFromHistoryItem(item)
+            };
+        });
+    }
+
+    function importHistoryFromRawText(rawText) {
+        const text = String(rawText || '').trim();
+
+        if (!text) {
+            showToast('الصق محتوى الحركات أولًا');
+            return;
+        }
+
+        let importedHistory;
+        try {
+            importedHistory = parseImportedHistory(text);
+        } catch (error) {
+            showToast('المحتوى غير صالح للاستيراد');
+            return;
+        }
+
+        if (!confirm('\u0633\u064a\u062a\u0645 \u0627\u0633\u062a\u0628\u062f\u0627\u0644 \u0627\u0644\u0633\u062c\u0644 \u0627\u0644\u062d\u0627\u0644\u064a \u0648\u0627\u0633\u062a\u064a\u0631\u0627\u062f ' + importedHistory.length + ' \u062d\u0631\u0643\u0629. \u0647\u0644 \u062a\u0631\u064a\u062f \u0627\u0644\u0645\u062a\u0627\u0628\u0639\u0629\u061f')) {
+            return;
+        }
+
+        localStorage.setItem(historyKey, JSON.stringify(importedHistory));
+        showAllHistory = false;
+        activeHistoryDate = '';
+        activeHistoryMonth = '';
+        activeHistoryStartDate = '';
+        activeHistoryEndDate = '';
+        activeHistoryFilterWallet = 'all';
+        historySearchQuery = '';
+
+        const dateInput = document.getElementById('historyDateFilter');
+        const monthInput = document.getElementById('historyMonthFilter');
+        const searchInput = document.getElementById('historySearchInput');
+        const summaryDayInput = document.getElementById('historySummaryDayInput');
+        const summaryMonthInput = document.getElementById('historySummaryMonthInput');
+        const reportStartInput = document.getElementById('historyReportStartDate');
+        const reportEndInput = document.getElementById('historyReportEndDate');
+        if (dateInput) dateInput.value = '';
+        if (monthInput) monthInput.value = '';
+        if (searchInput) searchInput.value = '';
+        if (summaryDayInput) summaryDayInput.value = '';
+        if (summaryMonthInput) summaryMonthInput.value = '';
+        if (reportStartInput) reportStartInput.value = '';
+        if (reportEndInput) reportEndInput.value = '';
+
+        setHistoryFilterWallet('all');
+        closeHistoryFilterPanel();
+        closeHistoryReportPanel();
+        closeHistoryTransferModal();
+        loadHistory();
+        showToast('تم استيراد الحركات بنجاح');
+    }
+
+    function importHistoryFromText() {
+        const importText = document.getElementById('historyImportText');
+        importHistoryFromRawText(importText ? importText.value : '');
+    }
+
+    function openHistoryImportFilePicker() {
+        const fileInput = document.getElementById('historyImportFile');
+        if (!fileInput) return;
+        fileInput.value = '';
+        fileInput.click();
+    }
+
+    async function importHistoryFromFile(event) {
+        const fileInput = event && event.target;
+        const file = fileInput && fileInput.files ? fileInput.files[0] : null;
+        if (!file) return;
+
+        try {
+            const rawText = await file.text();
+            importHistoryFromRawText(rawText);
+        } catch (error) {
+            showToast('تعذر قراءة ملف النسخة الاحتياطية');
+        } finally {
+            if (fileInput) fileInput.value = '';
+        }
+    }
+
+    function getHistoryItemId(item, index) {
+        return item.id || `${item.timestamp}-${item.phone}-${index}`;
+    }
+
+    function getHistoryItemById(id) {
+        const history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        const index = history.findIndex((item, itemIndex) => getHistoryItemId(item, itemIndex) === id);
+        return {
+            history,
+            index,
+            item: index >= 0 ? history[index] : null
+        };
+    }
+
+    function parseHistoryTimestampForInput(item) {
+        const timestamp = item.timestamp || '';
+        const dateISO = item.dateISO || getDateFromHistoryItem(item);
+        const timePart = (timestamp.split('|')[1] || '').trim();
+        const timeMatch = timePart.match(/^(\d{2}):(\d{2})(?::(\d{2}))?$/);
+        if (!dateISO || !timeMatch) return '';
+
+        return `${dateISO}T${timeMatch[1]}:${timeMatch[2]}`;
+    }
+
+    function buildHistoryTimestampFromInput(value) {
+        const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+        if (!match) return null;
+
+        return {
+            dateISO: `${match[1]}-${match[2]}-${match[3]}`,
+            timestamp: `${match[1]}/${match[2]}/${match[3]} | ${match[4]}:${match[5]}:00`
+        };
+    }
+
+    function setHistoryEditErrorsVisible({ phone = false, amount = false, timestamp = false } = {}) {
+        const phoneError = document.getElementById('editHistoryPhoneError');
+        const amountError = document.getElementById('editHistoryAmountError');
+        const timestampError = document.getElementById('editHistoryTimestampError');
+        if (phoneError) phoneError.style.display = phone ? 'block' : 'none';
+        if (amountError) amountError.style.display = amount ? 'block' : 'none';
+        if (timestampError) timestampError.style.display = timestamp ? 'block' : 'none';
+    }
+
+    function openHistoryEditModal(event, id) {
+        event.stopPropagation();
+
+        const result = getHistoryItemById(id);
+        if (!result.item) {
+            showToast('لم يتم العثور على الحركة');
+            return;
+        }
+
+        editingHistoryItemId = id;
+        document.getElementById('editHistoryId').value = id;
+        document.getElementById('editHistoryPhone').value = result.item.phone || '';
+        document.getElementById('editHistoryAmount').value = result.item.amount || '';
+        document.getElementById('editHistoryTimestamp').value = parseHistoryTimestampForInput(result.item);
+        document.getElementById('editHistoryNotes').value = result.item.notes || '';
+        setHistoryEditErrorsVisible();
+
+        const modal = document.getElementById('historyEditModal');
+        if (modal) modal.style.display = 'flex';
+    }
+
+    function closeHistoryEditModal() {
+        const modal = document.getElementById('historyEditModal');
+        if (modal) modal.style.display = 'none';
+        editingHistoryItemId = '';
+    }
+
+    function handleHistoryEditBackdrop(event) {
+        if (event.target && event.target.id === 'historyEditModal') {
+            closeHistoryEditModal();
+        }
+    }
+
+    function saveHistoryEdit() {
+        const id = document.getElementById('editHistoryId').value || editingHistoryItemId;
+        const editPhoneInput = document.getElementById('editHistoryPhone');
+        editPhoneInput.value = normalizePhoneNumber(editPhoneInput.value, true);
+        const phone = editPhoneInput.value.trim();
+        const amountValue = document.getElementById('editHistoryAmount').value.trim();
+        const amount = parseFloat(amountValue);
+        const timestampValue = document.getElementById('editHistoryTimestamp').value;
+        const notes = document.getElementById('editHistoryNotes').value.trim();
+        const timestampInfo = buildHistoryTimestampFromInput(timestampValue);
+
+        const hasPhoneError = !/^(059|056)\d{7}$/.test(phone);
+        const hasAmountError = amountValue === '' || isNaN(amount) || amount < 1 || amount > 999;
+        const hasTimestampError = !timestampInfo;
+        setHistoryEditErrorsVisible({
+            phone: hasPhoneError,
+            amount: hasAmountError,
+            timestamp: hasTimestampError
+        });
+
+        if (hasPhoneError || hasAmountError || hasTimestampError) return;
+
+        const result = getHistoryItemById(id);
+        if (!result.item) {
+            closeHistoryEditModal();
+            showToast('لم يتم العثور على الحركة');
+            return;
+        }
+
+        result.history[result.index] = {
+            ...result.item,
+            id: result.item.id || id,
+            phone,
+            amount,
+            timestamp: timestampInfo.timestamp,
+            notes,
+            dateISO: timestampInfo.dateISO
+        };
+
+        localStorage.setItem(historyKey, JSON.stringify(result.history));
+        closeHistoryEditModal();
+        hideHistorySummaryCard();
+        loadHistory();
+        showToast('تم تعديل الحركة بنجاح');
+    }
+
+    function deleteHistoryItem(event, id) {
+        event.stopPropagation();
+        if (!confirm('هل تريد حذف هذه الحركة فقط؟')) return;
+
+        let history = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        history = history.filter((item, index) => {
+            const itemId = getHistoryItemId(item, index);
+            return itemId !== id;
+        });
+        localStorage.setItem(historyKey, JSON.stringify(history));
+        hideHistorySummaryCard();
+        loadHistory();
+    }
+
+    function toggleMore() {
+        showAllHistory = !showAllHistory;
+        loadHistory();
+    }
+
+    function clearHistory() {
+        const modal = document.getElementById('historyDeleteModal');
+        if (modal) modal.style.display = 'flex';
+    }
+
+    function closeHistoryDeleteModal() {
+        const modal = document.getElementById('historyDeleteModal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function handleHistoryDeleteBackdrop(event) {
+        if (event.target && event.target.id === 'historyDeleteModal') {
+            closeHistoryDeleteModal();
+        }
+    }
+
+    function confirmClearHistory() {
+        localStorage.removeItem(historyKey);
+        showAllHistory = false;
+        activeHistoryDate = '';
+        activeHistoryMonth = '';
+        activeHistoryStartDate = '';
+        activeHistoryEndDate = '';
+        activeHistoryFilterWallet = 'all';
+        const dateInput = document.getElementById('historyDateFilter');
+        const monthInput = document.getElementById('historyMonthFilter');
+        const summaryDayInput = document.getElementById('historySummaryDayInput');
+        const summaryMonthInput = document.getElementById('historySummaryMonthInput');
+        const reportStartInput = document.getElementById('historyReportStartDate');
+        const reportEndInput = document.getElementById('historyReportEndDate');
+        if (dateInput) dateInput.value = '';
+        if (monthInput) monthInput.value = '';
+        if (summaryDayInput) summaryDayInput.value = '';
+        if (summaryMonthInput) summaryMonthInput.value = '';
+        if (reportStartInput) reportStartInput.value = '';
+        if (reportEndInput) reportEndInput.value = '';
+        setHistoryFilterWallet('all');
+        closeHistoryDeleteModal();
+        closeHistoryFilterPanel();
+        closeHistoryReportPanel();
+        resetForm(true);
+        setFormAvailability(true);
+        loadHistory();
+        showToast('تم حذف جميع الحركات');
+    }
+</script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon='{"version":"2024.11.0","token":"1a09ef8a34cf4ef9911950035033cc39","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
